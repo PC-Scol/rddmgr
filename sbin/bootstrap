@@ -1,0 +1,74 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+
+MYDIR="$(cd "$(dirname "$0")/.."; pwd)"
+if [ -z "$_BOOTSTRAP_IN_DOCKER" ]; then
+    ################################################################################
+    # Charger ~/.dkbuild.env
+
+    PROFILE=
+    HOST_MAPPINGS=()
+    function default_profile() {
+        PROFILE="$1"
+    }
+    function profile() {
+        local profile
+        for profile in "$@"; do
+            [ "$profile" == "$PROFILE" ] && return 0
+        done
+        return 1
+    }
+    function setenv() {
+        eval "export $1"
+    }
+    function default() {
+        local command="$1"; shift
+        local nv n v
+        case "$command" in
+        docker)
+            for nv in "$@"; do
+                [[ "$nv" == *=* ]] || continue
+                n="${nv%%=*}"
+                v="${nv#*=}"
+                case "$n" in
+                host-mappings)
+                    read -a nv <<<"$v"
+                    for v in "${ns[@]}"; do
+                        HOST_MAPPINGS+=("$v")
+                    done
+                    ;;
+                esac
+            done
+            ;;
+        esac
+    }
+    [ -f ~/.dkbuild.env ] && source ~/.dkbuild.env
+
+    [ -n "$REGISTRY" ] || REGISTRY=pubdocker.univ-reunion.fr
+    [ -n "PHP_IMAGE" ] || PHP_IMAGE="$REGISTRY/image/php:d11"
+
+    ################################################################################
+    # Lancer la commande depuis l'extérieur du container
+    args=(
+        run -it
+        --rm
+        --name rddmgr-bootstrap
+        -e _BOOTSTRAP_IN_DOCKER=1
+        -e _BOOTSTRAP_USER="$(id -u)"
+        -e _BOOTSTRAP_GROUP="$(id -g)"
+        -v "$MYDIR:/rddmgr"
+    )
+    [ -d ~/.composer ] && args+=(-v "$HOME/.composer:/root/.composer")
+    args+=(
+        -w /rddmgr
+        "$IMAGE"
+        exec ./sbin/bootstrap
+    )
+    exec docker "${args[@]}" "$@"
+
+else
+    # Lancement depuis l'intérieur du container
+    cd "$MYDIR"
+    ./sbin/composer.phar i || exit 1
+    chown -R "$_BOOTSTRAP_USER:$_BOOTSTRAP_GROUP" vendor
+fi
