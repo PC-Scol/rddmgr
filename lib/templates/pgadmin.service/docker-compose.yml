@@ -1,0 +1,40 @@
+# -*- coding: utf-8 mode: yaml -*- vim:sw=2:sts=2:et:ai:si:sta:fenc=utf-8
+
+version: "3.8"
+
+services:
+  main:
+    build: .
+    image: rddmgr/pgadmin-main
+    volumes:
+      - ./private/pgadmin-data:/var/lib/pgadmin
+      - ./private/servers.json:/pgadmin4/servers.json
+    restart: unless-stopped
+    networks:
+      @@LBNET@@:
+      @@DBNET@@:
+    labels:
+      # http
+      - "traefik.http.routers.http-pgadmin-main.entryPoints=http"
+      - "traefik.http.routers.http-pgadmin-main.rule=Host(`@@PGADMIN_LBHOST@@`)"
+      #@@SSL@@##@@NOPGADMINP@@#- "traefik.http.routers.http-pgadmin-main.middlewares=redir2https@file"
+      #@@SSL@@##@@PGADMINP@@#- "traefik.http.routers.http-pgadmin-main.middlewares=redir2https@file,pgadmin-main-auth"
+      #@@NOSSL@@##@@PGADMINP@@#- "traefik.http.routers.http-pgadmin-main.middlewares=pgadmin-main-auth"
+      - "traefik.http.routers.http-pgadmin-main.service=pgadmin-main-web"
+      #@@SSL@@## https
+      #@@SSL@@#- "traefik.http.routers.https-pgadmin-main.entryPoints=https"
+      #@@SSL@@#- "traefik.http.routers.https-pgadmin-main.rule=Host(`@@PGADMIN_LBHOST@@`)"
+      #@@SSL@@#- "traefik.http.routers.https-pgadmin-main.tls=true"
+      #@@SSL@@##@@PGADMINP@@#- "traefik.http.routers.https-pgadmin-main.middlewares=pgadmin-main-auth"
+      #@@SSL@@#- "traefik.http.routers.https-pgadmin-main.service=pgadmin-main-web"
+      # commun
+      - "rddmgr.enable=true"
+      - "traefik.docker.network=@@LBNET@@"
+      - "traefik.http.services.pgadmin-main-web.loadbalancer.server.port=80"
+      #@@PGADMINP@@#- "traefik.http.middlewares.pgadmin-main-auth.basicauth.users=@@PGADMIN_PASSWORD@@"
+
+networks:
+  @@LBNET@@:
+    external: true
+  @@DBNET@@:
+    external: true

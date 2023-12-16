@@ -1,0 +1,57 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "3b39e2706aaa8482d56f54af5471099c",
+    "packages": [
+        {
+            "name": "nulib/php",
+            "version": "dev-wip",
+            "source": {
+                "type": "git",
+                "url": "https://git.univ-reunion.fr/sda-php/nulib.git",
+                "reference": "d7323d7d45a73edf8d033253a6b52ae8a3f6e25e"
+            },
+            "require": {
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "nulib/tests": "7.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "nulib\\": "php/src_base"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "nulib\\": "php/tests"
+                }
+            },
+            "authors": [
+                {
+                    "name": "Jephte Clain",
+                    "email": "Jephte.Clain@univ-reunion.fr"
+                }
+            ],
+            "description": "fonctions et classes essentielles",
+            "time": "2023-12-15T07:45:24+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "nulib/php": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=7.4"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "2.2.0"
+}

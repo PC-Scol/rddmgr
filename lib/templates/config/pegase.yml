@@ -1,0 +1,46 @@
+# -*- coding: utf-8 mode: yaml -*- vim:sw=2:sts=2:et:ai:si:sta:fenc=utf-8
+
+# le domaine établissement utilisé pour construire les URLs d'accès aux instances
+domaine_etab: univ-ville
+
+# UAI de l'établissement
+uai_etab: XXXXXXX
+
+# Fuseau dans lequel sont configurées les instances
+timezone: Europe/Paris
+
+# les proxies doivent être de la forme http://proxy.domain.tld:port
+# s'ils ne sont pas définis ici, les variables d'environnement HTTP_PROXY,
+# HTTPS_PROXY et NO_PROXY sont consultés
+http_proxy:
+https_proxy:
+no_proxy:
+
+instances:
+  prod:
+    accounts:
+      svc-rdd:
+      svc-authz-admin:
+    # Les URLs sont calculés automatiquement. mais si nécessaire, on peut
+    # définir chaque url séparément
+    #urls:
+    #  authn-app: https://authn-app.DOMAINEETABLISSEMENT.pc-scol.fr/cas/v1/tickets
+    #  authz: https://authz.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  ref: https://ref.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  cof: https://cof.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  mof: https://mof.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  ins: https://ins.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  chc: https://chc.DOMAINEETABLISSEMENT.pc-scol.fr
+    #  coc: https://coc.DOMAINEETABLISSEMENT.pc-scol.fr
+  test:
+    accounts:
+      svc-rdd:
+      svc-authz-admin:
+  rdd:
+    accounts:
+      svc-rdd:
+      svc-authz-admin:
+  pilote:
+    accounts:
+      svc-rdd:
+      svc-authz-admin:

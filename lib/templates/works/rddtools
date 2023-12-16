@@ -1,0 +1,37 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+MYDIR="$(dirname "$0")"
+"$MYDIR/../lib/sbin/bootstrap" && source "$MYDIR/../lib/vendor/nulib/php/load.sh" || exit 1
+RDDMGR="${MYDIR%/*}"
+WSDIR="$MYDIR"
+source "$RDDMGR/lib/functions.sh" || exit 1
+
+action=rddtools
+BuildBefore=1
+Envname=
+Debug=
+CleanAfter=
+args=(
+    "front-end pour rddtools"
+    #"usage"
+    -s,--start action=start "Démarrer la base pivot"
+    -k,--stop action=stop "Arrêter la base pivot"
+    -r,--restart action=restart "Démarrer la base pivot"
+    --no-build BuildBefore= "++Ne pas (re)construire les images avant de démarrer les services"
+    -l,--list action=list "Lister les environnements"
+    -e:,--env Envname= "Spécifier l'environnement à utiliser"
+    -d,--debug Debug=1 "Lancer la tâche en mode debug (debug_job=O)"
+    -g,--clean-after CleanAfter=1 "++Indiquer s'il faut supprimer l'environnement système après exécution de la tâche"
+)
+parse_args "$@"; set -- "${args[@]}"
+
+load_config "" "$WSDIR/.env"
+
+case "$action" in
+start) start_pivotbdd "$@";;
+stop) stop_pivotbdd "$@";;
+restart) restart_pivotbdd "$@";;
+list) list_envs "$@";;
+rddtools) run_rddtools "$@";;
+*) die "$action: action non implémentée";;
+esac

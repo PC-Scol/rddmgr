@@ -1,0 +1,78 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+MYDIR="$(dirname -- "$0")"
+"$MYDIR/bootstrap" && source "$MYDIR/../vendor/nulib/php/load.sh" || exit 1
+RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
+source "$RDDMGR/lib/functions.sh" || exit 1
+
+debug=
+reload=1
+args=(
+    "mettre à jour la liste des serveurs pour l'instance partagée de pgadmin"
+    -n,--debug . "afficher le fichier plutôt que le regénérer"
+    --no-reload reload= "ne pas recharger la liste des serveurs après mise à jour"
+)
+parse_args "$@"; set -- "${args[@]}"
+
+cd "$RDDMGR"
+[ -d "pgadmin.service" ] || die "Vous devez d'abord initialiser l'environnement"
+
+server_indent="  "
+server_comma=
+data_indent="    "
+data_comma=
+
+function data_start() {
+    echo "$server_indent$server_comma\"$i\": {"
+    server_comma=,
+    data_comma=
+}
+function data_str() {
+    echo "$data_indent$data_comma\"$1\": \"$2\""
+    data_comma=,
+}
+function data_int() {
+    echo "$data_indent$data_comma\"$1\": $2"
+    data_comma=,
+}
+function data_stop() {
+    echo "$server_indent}"
+}
+
+[ -z "$debug" ] && exec 6>&1 >pgadmin.service/private/servers.json
+echo '{"Servers": {'
+setx -a wsdirs=ls_dirs . "*.works"
+i=1
+for wsdir in "${wsdirs[@]}"; do
+    [ "$wsdir" == default.works -a -L default.works ] && continue
+
+    eval "$(dump-config.py "" "" "$wsdir/.env" --postgres)"
+    wsname="${wsdir%.works}"
+    data_start "$i"
+    data_str Name "$wsdir"
+    data_str Group Servers
+    data_str Host "${wsname}_db"
+    data_int Port 5432
+    data_str Comment "Bases pivots de l'espace de travail $wsname"
+    data_str Username pcscolpivot
+    data_str PasswordExecCommand "echo '$pcscolpivot_password'"
+    data_str SSLMode disable
+    data_str MaintenanceDB postgres
+    data_stop
+    let i=i+1
+done
+echo '}}'
+[ -z "$debug" ] && exec 1>&6 6>&-
+
+if [ -z "$debug" -a -n "$reload" ]; then
+    setx ctid=dklsct rddmgr/pgadmin-main
+    if [ -n "$ctid" ]; then
+        docker=(docker exec -it -w /pgadmin4)
+        args=(
+            /venv/bin/python setup.py
+            --load-servers servers.json
+            --replace
+        )
+        "${docker[@]}" "$ctid" "${args[@]}"
+    fi
+fi

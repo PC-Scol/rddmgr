@@ -1,0 +1,15 @@
+[http.routers]
+  [http.routers.http-traefik]
+    entryPoints = ["http"]
+    rule = "Host(`@@TRAEFIK_LBHOST@@`)"
+    #@@SSL@@#middlewares = ["redir2https"]
+    #@@NOSSL@@##@@TRAEFIKP@@#middlewares = ["traefik-auth"]
+    service = "api@internal"
+
+  [http.routers.https-traefik]
+    entryPoints = ["https"]
+    rule = "Host(`@@TRAEFIK_LBHOST@@`)"
+    #@@TRAEFIKP@@#middlewares = ["traefik-auth"]
+    service = "api@internal"
+    [http.routers.https-traefik.tls]
+      #@@LETSENC@@#certresolver = "le"
