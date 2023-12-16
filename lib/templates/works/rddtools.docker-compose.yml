@@ -1,0 +1,30 @@
+# -*- coding: utf-8 mode: yaml -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+
+version: "3.8"
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: pivotbdd
+      POSTGRES_USER: pcscol
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    shm_size: 1g
+    volumes:
+      - ./private/postgres-data:/var/lib/postgresql/data
+      - ./init/rdd-tools-pivot_${PIVOTBDD_VERSION}/scripts:/docker-entrypoint-initdb.d
+    networks:
+      @@DBNET@@:
+        aliases:
+            - ${POSTGRES_HOST}
+    # s'il faut que la base de données soit directement accessible, décommenter
+    # et adaptez le cas échéant les lignes suivantes:
+    #ports:
+    #  - "@@DBVIP@@@@PGSQL_PORT@@:5432"
+    restart: unless-stopped
+
+networks:
+  @@LBNET@@:
+    external: true
+  @@DBNET@@:
+    external: true

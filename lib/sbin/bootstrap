@@ -1,0 +1,50 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+MYDIR="$(cd "$(dirname -- "$0")"; pwd)"
+MYNAME="$(basename -- "$0")"
+MYSELF="$MYDIR/$MYNAME"
+RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
+
+function eecho() { echo "$*" 1>&2; }
+function eerror() { eecho "ERROR: $*"; }
+function die() { [ $# -gt 0 ] && eerror "$*"; exit 1; }
+
+if [ "$1" == --force ]; then
+    force=1
+    shift
+else
+    force=
+fi
+if [ -f "$RDDMGR/lib/vendor/nulib/php/load.sh" -a -z "$force" ]; then
+    # bootstrap uniquement si vendor/ n'existe pas
+    exit 0
+fi
+
+if [ -z "$_RUNDK_IN_DOCKER" ]; then
+    eecho "== bootstrap rddmgr"
+    exec "$MYDIR/rundk" "./${MYSELF#$RDDMGR/}" ${force:+--force} "$@"
+
+else
+    # Lancement depuis l'intérieur du container
+    cd "$RDDMGR/lib"
+
+    case "${1:-install}" in
+    i|install)
+        eecho "* installation des dépendances composer dans lib/"
+        ./sbin/composer.phar i || die
+        ;;
+    u|update)
+        eecho "* mise à jour des dépendances composer dans lib/"
+        ./sbin/composer.phar u || die
+        ;;
+    *)
+        die "$*: argument(s) invalide(s)"
+        ;;
+    esac
+
+    if [ "$_RUNDK_UID" == 0 ]; then
+        # si on est lancé avec root, corriger le propriétaire de la destination
+        eecho "* maj des propriétaires et groupes"
+        chown -R "$_RUNDK_UID:$_RUNDK_GID" vendor
+    fi
+fi

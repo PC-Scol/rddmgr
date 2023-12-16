@@ -1,0 +1,27 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+MYDIR="$(dirname -- "$0")"
+"$MYDIR/bootstrap" && source "$MYDIR/../vendor/nulib/php/load.sh" || exit 1
+RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
+
+user=
+quote=
+args=(
+    "hasher un mot de passe pour traefik"
+    -u:,--user . "spécifier le nom de l'utilisateur"
+    -q,--quote . "mettre en échappement les caractères \$"
+)
+parse_args "$@"; set -- "${args[@]}"
+
+[ -n "$user" ] || user=admin
+
+if [ -z "$_RUNDK_IN_DOCKER" ] && ! in_path htpasswd; then
+    exec "$MYDIR/rundk" "./${MYSELF#$RDDMGR/}" -u "$user" ${quote:+-q} "$@"
+fi
+
+password="$1"; shift
+[ -n "$password" ] || die "vous devez spécifier le mot de passe"
+
+line="$(echo "$password" | htpasswd -nbi "$user")"
+[ -n "$quote" ] && line="${line//\$/\$\$}"
+echo "$line"
