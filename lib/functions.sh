@@ -614,7 +614,7 @@ function create_workspace() {
         if [ -f "$scriptx" ]; then
             estep "Extraction de l'archive"
             mkdir -p "$scripts_externes" || die
-            unzip -q "$scriptx" -d "$scripts_externes" || die
+            unzip -q -j "$scriptx" -d "$scripts_externes" || die
 
             #estep "Suppression de l'archive source"
             #rm "$scriptx" || die
@@ -647,7 +647,7 @@ function create_workspace() {
                 estep "Extraction de l'archive"
                 mkdir -p "$fichiers_transco" || die
                 unzip -q -j "$initsrc" -d "$fichiers_transco" || die
-                mkdir -p "$wsdirinit/$initsrcdir"
+                mkdir -p "$fichiers_transco/$initsrcdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initsrc" || die
@@ -675,7 +675,7 @@ function create_workspace() {
                 estep "Extraction de l'archive"
                 mkdir -p "$fichiers_transco" || die
                 unzip -q -j "$initph" -d "$fichiers_transco" || die
-                mkdir -p "$wsdirinit/$initphdir"
+                mkdir -p "$fichiers_transco/$initphdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initph" || die
