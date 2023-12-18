@@ -65,8 +65,10 @@ $ ./rddmgr -c path/to/dl
 l'espace de travail `v22.works` est créé, et la base pivot associée est démarrée
 
 Il faut maintenant créer un environnement.
-Se placer dans l'espace de travail et lancer rddtools avec l'option -e.
-Dans cet exemple, on crée un environnement nommé 'rdd'
+Lancer rddtools sans argument crée un environnement par défaut s'il n'en existe pas déjà un.
+L'option -c force la création d'un nouvel environnement.
+L'option -e permet de sélectionner un environnement, qui sera créé s'il n'existe pas déjà.
+Dans cet exemple, on crée un environnement nommé 'rdd':
 ~~~sh
 cd v22.works
 
@@ -76,12 +78,11 @@ cd v22.works
 Lors de la création de l'environnement, il faut choisir:
 - l'instance PEGASE qui sera attaqué par cet environnement et dans lequel seront faites les injections
 - la source de données qui sera utilisée pour les déversements, ainsi que le profil de connexion
+- le nom final de l'environnement est toujours préfixé du nom de l'instance pegase.
 
-L'environnement désigné avec l'option -e devient l'environnement utilisé par défaut.
-Il est possible de créer autant d'environnements que nécessaire, ou de sélectionner un environnement existant.
-~~~sh
-./rddtools -e test
-~~~
+IMPORTANT: Il est possible de créer autant d'environnements que nécessaire.
+Cependant, dans cette version de rddmgr, tous les environnements partagent la même base pivot.
+Leur intérêt se limite donc à préparer des données à injecter à l'identique dans plusieurs instances.
 
 ## Répertoires
 

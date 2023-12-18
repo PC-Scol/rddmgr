@@ -64,7 +64,7 @@ Le cas échéant, modifiez la configuration avant de relancer ce script:
     fi
 }
 
-function init_env() {
+function init_system() {
     esection "Initialisation de l'environnement docker"
 
     if [ -n "$InitNetworks" ]; then
@@ -107,7 +107,7 @@ function init_env() {
     fi
 }
 
-function check_env() {
+function check_system() {
     edebug "Vérification de l'environnement docker et des espaces de travail"
 
     edebug "Vérification des réseaux"
@@ -867,6 +867,27 @@ function restart_pivotbdd() {
     start_pivotbdd "$@"
 }
 
+function list_envs() {
+    local -a envnames; local envname current
+    if [ -L "$WSDIR/current.env" ]; then
+        current="$(readlink "$WSDIR/current.env")"
+        current="${current#envs/}"
+    fi
+    setx -a envnames=ls_files "$WSDIR/envs" "*.env"
+    if [ ${#envnames[*]} -gt 0 ]; then
+        esection "Liste des environnements"
+        for envname in "${envnames[@]}"; do
+            if [ "$envname" == "$current" ]; then
+                estep "$envname (environnement courant)"
+            else
+                estep "$envname"
+            fi
+        done
+    else
+        ewarn "Il n'y a pas d'environnement pour le moment. Utilisez l'option -e pour en créer un"
+    fi
+}
+
 function ensure_system_ymls() {
     if [ -f "$WSDIR/config/pegase.yml" ]; then
         pegase_yml="$WSDIR/config/pegase.yml"
@@ -883,27 +904,26 @@ function ensure_system_ymls() {
         die "le fichier config/sources.yml est requis"
     fi
 }
+
 function ensure_user_env() {
     mkdir -p "$WSDIR/envs"
 
     local previous
-    if [ -L "$WSDIR/current.env" ]; then
+    if [ -L "$WSDIR/current.env" -a -f "$WSDIR/current.env" ]; then
         previous="$(readlink "$WSDIR/current.env")"
         previous="${previous#envs/}"
-        if [ -f "$WSDIR/current.env" ]; then
-            eval "$(cat "$WSDIR/current.env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
-        fi
+        eval "$(cat "$WSDIR/current.env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
     fi
-    [ -n "$Envname" ] || Envname="$previous"
-
-    if [ -z "$Envname" ]; then
-        ewarn "Aucun environnement n'est défini ou sélectionné"
-        Envname=default
+    if [ -n "$ForceCreate" ]; then
+        Envname=
+    else
+        [ -n "$Envname" ] || Envname="$previous"
+        [ -n "$Envname" ] || ewarn "Aucun environnement n'est défini ou sélectionné"
     fi
-    Envname="${Envname%.env}.env"
 
-    if [ ! -f "$WSDIR/envs/$Envname" ]; then
-        ask_yesno "L'environnement $Envname n'existe pas. Voulez-vous le créer?" O || die
+    [ -n "$Envname" ] && Envname="${Envname%.env}.env"
+    if [ -z "$Envname" -o ! -f "$WSDIR/envs/$Envname" ]; then
+        einfo "Il faut créer un nouvel environnement"
         eval "$(dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
 
         [ -n "$instance" ] || instance="${instances[0]}"
@@ -921,6 +941,15 @@ function ensure_user_env() {
         else
             source_profile=
         fi
+
+        if [ -z "$Envname" ]; then
+            Envname="$instance.env"
+            enote "Le nom de l'environnement sera $Envname"
+        elif [[ "$Envname" != *_* ]]; then
+            Envname="${instance}_${Envname}"
+            enote "Le nom a été changé en $Envname"
+        fi
+        ask_yesno "Voulez-vous créer le nouvel environnement $Envname?" O || die
 
         echo >"$WSDIR/envs/$Envname" "\
 # Ces paramètres servent à sélectionner la source des données pour les

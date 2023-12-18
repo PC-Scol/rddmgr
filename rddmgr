@@ -61,7 +61,7 @@ if [ -n "$init" ]; then
         InitPgadmin=1
     fi
 
-    init_env
+    init_system
 fi
 
 [ -n "$action" ] || action=start
@@ -72,7 +72,7 @@ if [ "$check" == auto ]; then
     *) check=1;;
     esac
 fi
-[ -n "$check" ] && check_env
+[ -n "$check" ] && check_system
 
 case "$action" in
 none) ;;
