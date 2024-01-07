@@ -29,14 +29,14 @@ args=(
     -l,--lists action=list "Lister les espaces de travail"
     -c,--create action=create "Créer un nouvel espace de travail.
 Il faut fournir comme argument supplémentaire une ou plusieurs des informations suivantes:
-- CREATE_WSDIR -- le nom de l'environnement à créer
-- SOURCE_WSDIR -- un environnement depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après CREATE_WSDIR
-- SHARED_DIR -- chemin vers un répertoire contenant les répertoires rdd-tools, rdd-tools-pivot, fichiers_init_et_transcos téléchargés depuis l'espace partagé $SHARED_URL?p=/RDD&mode=list
-- VERSION -- version des fichiers à considérer. peut être de la forme 23.0.0 ou 0.1.0-dev.824
+- [create=]WSDIR -- le nom de l'environnement à créer
+- [source=]SOURCE_WSDIR -- un environnement depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après CREATE_WSDIR
+- [shared=]SHARED_DIR -- chemin vers un répertoire contenant les répertoires rdd-tools, rdd-tools-pivot, fichiers_init_et_transcos téléchargés depuis l'espace partagé $SHARED_URL?p=/RDD&mode=list
+- [version=]VERSION -- version des fichiers à considérer. peut être de la forme 23.0.0 ou 0.1.0-dev.824
 - SOURCE -- une valeur parmi apogee, scolarix, sve ou vierge permettant de sélectionner automatiquement le bon fichier d'initialisation et de transcodification dans SHARED_DIR
-- rdd-tools_VERSION.tar -- image docker à importer
-- mypegase_VERSION.env -- fichier d'environnement
-- rdd-tools-pivot_VERSION.tar.gz -- définition de la base pivot
+- [image=]rdd-tools_VERSION.tar -- image docker à importer
+- [env=]mypegase_VERSION.env -- fichier d'environnement
+- [pivot=]rdd-tools-pivot_VERSION.tar.gz -- définition de la base pivot
 - RDD-scripts-externes_VERSION.zip -- scripts externes à installer
 - RDD-init-habilitations-personnes_VERSION.zip -- fichier d'initialisation des personnes et des habilitations
 - RDD-init-transco-SOURCE_VERSION.zip -- fichier d'initialisation et de transcodification. un seul fichier (et donc une seule SOURCE) doit être sélectionné"

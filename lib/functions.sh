@@ -200,46 +200,99 @@ function create_workspace() {
         else
             # autres
             local major minor patch
-            if [ -d "$RDDMGR/$arg" ]; then
-                if [ -z "$wsdir" ]; then
-                    wsdir="$arg"
-                elif [ -z "$source_wsdir" ]; then
-                    source_wsdir="$arg"
-                else
-                    die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
+            case "$arg" in
+            c=*|create=*)
+                if [ "${arg#c=}" != "$arg" ]; then arg="${arg#c=}"
+                elif [ "${arg#create=}" != "$arg" ]; then arg="${arg#create=}"
                 fi
-            elif [ -d "$RDDMGR/$arg.works" ]; then
-                arg="$arg.works"
-                if [ -z "$wsdir" ]; then
-                    wsdir="$arg"
-                elif [ -z "$source_wsdir" ]; then
-                    source_wsdir="$arg"
-                else
-                    die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
-                fi
-            elif is_version "$arg"; then
-                set_version "$arg"
-            elif is_vxx "$arg"; then
-                set_vxx "$arg"
-            elif is_devxx "$arg"; then
-                set_devxx "$arg"
-            elif [[ "$arg" == *.*.* ]]; then
-                check_version "$arg"
-                set_version "$arg"
-            elif [[ "$arg" == 0.1.0-dev.* ]]; then
-                check_devxx "$arg"
-                set_devxx "$arg"
-            elif [[ "$arg" == dev* ]] && ispnum "${arg#dev}"; then
-                arg=0.1.0-dev."${arg#dev}"
-                check_devxx "$arg"
-                set_devxx "$arg"
-            elif [ "$arg" == apogee -o "$arg" == scolarix -o "$arg" == sve -o "$arg" == vierge ]; then
-                source="$arg"
-            elif [ -z "$wsdir" ]; then
+                [ -n "$wsdir" ] && die "$arg: vous ne pouvez spécifier qu'une seule destination"
                 wsdir="$arg"
-            else
-                die "$arg: version/valeur non reconnue"
-            fi
+                ;;
+            s=*|source=)
+                if [ "${arg#s=}" != "$arg" ]; then arg="${arg#s=}"
+                elif [ "${arg#source=}" != "$arg" ]; then arg="${arg#source=}"
+                fi
+                [ -n "$source_wsdir" ] && die "$arg: vous ne pouvez spécifier qu'une seule source"
+                source_wsdir="$arg"
+                ;;
+            r=*|shared=)
+                if [ "${arg#r=}" != "$arg" ]; then arg="${arg#r=}"
+                elif [ "${arg#shared=}" != "$arg" ]; then arg="${arg#shared=}"
+                fi
+                [ -n "$shareddir" ] && die "$arg: vous ne pouvez spécifier qu'une seule source"
+                shareddir="$arg"
+                ;;
+            #v=*|version=);;
+            i=*|image=*)
+                if [ "${arg#i=}" != "$arg" ]; then arg="${arg#i=}"
+                elif [ "${arg#image=}" != "$arg" ]; then arg="${arg#image=}"
+                fi
+                [ -n "$rddtools" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier image"
+                rddtools="$arg"
+                ;;
+            e=*|m=*|env=*|mypegase=*)
+                if [ "${arg#e=}" != "$arg" ]; then arg="${arg#e=}"
+                elif [ "${arg#m=}" != "$arg" ]; then arg="${arg#m=}"
+                elif [ "${arg#env=}" != "$arg" ]; then arg="${arg#env=}"
+                elif [ "${arg#mypegase=}" != "$arg" ]; then arg="${arg#mypegase=}"
+                fi
+                [ -n "$mypegase" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'environnement"
+                mypegase="$arg"
+                ;;
+            p=*|b=*|pivot=*|bdd=*|pivotbdd=*)
+                if [ "${arg#p=}" != "$arg" ]; then arg="${arg#p=}"
+                elif [ "${arg#b=}" != "$arg" ]; then arg="${arg#b=}"
+                elif [ "${arg#pivot=}" != "$arg" ]; then arg="${arg#pivot=}"
+                elif [ "${arg#bdd=}" != "$arg" ]; then arg="${arg#bdd=}"
+                elif [ "${arg#pivotbdd=}" != "$arg" ]; then arg="${arg#pivotbdd=}"
+                fi
+                [ -n "$pivotbdd" ] && die "$arg: vous ne pouvez spécifier qu'une seule définition de base pivot"
+                pivotbdd="$arg"
+                ;;
+            apogee|scolarix|sve|vierge)
+                source="$arg"
+                ;;
+            *)
+                if [ -d "$RDDMGR/$arg" ]; then
+                    if [ -z "$wsdir" ]; then
+                        wsdir="$arg"
+                    elif [ -z "$source_wsdir" ]; then
+                        source_wsdir="$arg"
+                    else
+                        die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
+                    fi
+                elif [ -d "$RDDMGR/$arg.works" ]; then
+                    arg="$arg.works"
+                    if [ -z "$wsdir" ]; then
+                        wsdir="$arg"
+                    elif [ -z "$source_wsdir" ]; then
+                        source_wsdir="$arg"
+                    else
+                        die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
+                    fi
+                elif is_version "$arg"; then
+                    set_version "$arg"
+                elif is_vxx "$arg"; then
+                    set_vxx "$arg"
+                elif is_devxx "$arg"; then
+                    set_devxx "$arg"
+                elif [[ "$arg" == *.*.* ]]; then
+                    check_version "$arg"
+                    set_version "$arg"
+                elif [[ "$arg" == 0.1.0-dev.* ]]; then
+                    check_devxx "$arg"
+                    set_devxx "$arg"
+                elif [[ "$arg" == dev* ]] && ispnum "${arg#dev}"; then
+                    arg=0.1.0-dev."${arg#dev}"
+                    check_devxx "$arg"
+                    set_devxx "$arg"
+                elif [ -z "$wsdir" ]; then
+                    wsdir="$arg"
+                else
+                    die "$arg: version/valeur non reconnue";;
+                fi
+                ;;
+            esac
         fi
     done
 
