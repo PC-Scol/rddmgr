@@ -46,7 +46,7 @@ Il faut maintenant créer un espace de travail.
 
 Dans l'exemple suivant, on crée l'espace de travail pour les rdd-tools 22.0.0:
 ~~~sh
-./rddmgr -c 22.0.0
+./rddmgr -c 22
 ~~~
 Les fichiers nécessaires sont téléchargés depuis l'espace partagé de PC-SCOL
 
@@ -63,7 +63,7 @@ RDD-scripts-externes_22.0.0.zip
 RDD-init-habilitations-personnes_V22.zip
 RDD-init-transco-apogee_22.0.0.zip
 
-$ ./rddmgr -c path/to/dl
+$ ./rddmgr -c 22 path/to/dl
 ~~~
 
 L'espace de travail `v22.works` est créé, et la base pivot associée est
@@ -91,6 +91,32 @@ IMPORTANT: Il est possible de créer autant d'environnements que nécessaire.
 Cependant, dans cette version de rddmgr, tous les environnements partagent la
 même base pivot.  Leur intérêt se limite donc à préparer des données à injecter
 à l'identique dans plusieurs instances.
+
+## Création d'un espace de travail pour une version de développement
+
+Parfois, PC-SCOL livre une version de développement à un établissement, pour
+vérifier la validité d'un correctif par exemple. La particularité de ce genre de
+livraison est que les version de l'image, du fichier d'environnement et de la
+base pivot ne sont pas forcément les mêmes.
+
+Par exemple, l'image de version 0.1.0-dev.894 utilise un fichier d'environnement
+de la version 22.0.0
+
+On peut créer un espace de travail basé sur un autre, ce qui permet de récupérer
+tout ce qui ne change pas. Par exemple, la commande suivante crée un espace de
+travail pour l'image de version 0.1.0-dev.894, tout en copiant le fichier
+d'environnement et la définition de la base pivot depuis l'espace de travail
+v22.works existant:
+~~~sh
+./rddmgr -c dev894 v22.works
+~~~
+
+Dans l'exemple suivant, les versions de l'image et du fichier d'environnement
+sont différents. Dans ce cas, il est nécessaire de spécifier chacun des
+fichiers en plus de la source le cas échéant:
+~~~sh
+./rddmgr -c rdd-tools_0.1.0-dev.875.tar mypegase_0.1.0-dev.870.env v22.works
+~~~
 
 # Notions et architectures
 
@@ -122,7 +148,7 @@ backups/
 
 Un espace de travail est caractérisé par une version d'image de rddtools, une
 version de mypegase.env et une version de la base pivot. Il est dans un
-répertoire de la forme `MONESPACE.works`
+répertoire de la forme `MON-ESPACE.works`
 
 envs/
 : fichier de paramètres pour les environnements
