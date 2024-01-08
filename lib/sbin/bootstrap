@@ -15,9 +15,18 @@ if [ "$1" == --force ]; then
 else
     force=
 fi
-if [ -f "$RDDMGR/lib/vendor/nulib/php/load.sh" -a -z "$force" ]; then
-    # bootstrap uniquement si vendor/ n'existe pas
-    exit 0
+if [ -z "$force" ]; then
+    # si vendor/ n'existe pas, alors on doit faire bootstrap
+    if [ ! -f "$RDDMGR/lib/vendor/nulib/php/load.sh" ]; then
+        : # bootstrap
+    elif [ ! -f "$RDDMGR/.composer.lock" ]; then
+        : # bootstrap
+    elif ! diff -q "$MYDIR/../composer.lock" "$RDDMGR/.composer.lock" >&/dev/null; then
+        : # bootstrap
+    else
+        # bootstrap inutile
+        exit 0
+    fi
 fi
 
 if [ -z "$_RUNDK_IN_DOCKER" ]; then
@@ -42,9 +51,12 @@ else
         ;;
     esac
 
+    # faire une copie du fichier .lock
+    cp "$MYDIR/../composer.lock" "$RDDMGR/.composer.lock"
+
     if [ "$_RUNDK_UID" == 0 ]; then
         # si on est lancé avec root, corriger le propriétaire de la destination
         eecho "* maj des propriétaires et groupes"
-        chown -R "$_RUNDK_UID:$_RUNDK_GID" vendor
+        chown -R "$_RUNDK_UID:$_RUNDK_GID" vendor "$RDDMGR/.composer.lock"
     fi
 fi

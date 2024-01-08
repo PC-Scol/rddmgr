@@ -8,6 +8,7 @@ source "$RDDMGR/lib/functions.sh" || exit 1
 
 action=rddtools
 BuildBefore=1
+ForceCreate=
 Envname=
 Debug=
 CleanAfter=
@@ -19,6 +20,7 @@ args=(
     -r,--restart action=restart "Démarrer la base pivot"
     --no-build BuildBefore= "++Ne pas (re)construire les images avant de démarrer les services"
     -l,--list action=list "Lister les environnements"
+    -c,--create ForceCreate=1 "Créer un nouvel environnement"
     -e:,--env Envname= "Spécifier l'environnement à utiliser"
     -d,--debug Debug=1 "Lancer la tâche en mode debug (debug_job=O)"
     -g,--clean-after CleanAfter=1 "++Indiquer s'il faut supprimer l'environnement système après exécution de la tâche"

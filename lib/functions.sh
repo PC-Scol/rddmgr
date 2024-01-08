@@ -64,7 +64,7 @@ Le cas échéant, modifiez la configuration avant de relancer ce script:
     fi
 }
 
-function init_env() {
+function init_system() {
     esection "Initialisation de l'environnement docker"
 
     if [ -n "$InitNetworks" ]; then
@@ -107,7 +107,7 @@ function init_env() {
     fi
 }
 
-function check_env() {
+function check_system() {
     edebug "Vérification de l'environnement docker et des espaces de travail"
 
     edebug "Vérification des réseaux"
@@ -147,21 +147,24 @@ function create_workspace() {
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## analyse des arguments
     local arg argname
-    local wsdir source_wsdir shareddir version vxx devxx rddtools mypegase pivotbdd scriptx source initsrc initph
+    local version vxx devxx dvrddtools dvmypegase dvpivotbdd
+    local wsdir source_wsdir shareddir rddtools mypegase pivotbdd scriptx source initsrc initph
     for arg in "$@"; do
         if [ -d "$arg" ]; then
             # répertoires
             setx argname=basename "$arg"
             if [[ "$argname" == *.works ]]; then
-                if [ -z "$wsdir" ]; then
+                if [ -z "$wsdir" -a -z "$version" ]; then
                     wsdir="$arg"
                 elif [ -z "$source_wsdir" ]; then
                     source_wsdir="$arg"
+                elif [ -z "$wsdir" ]; then
+                    wsdir="$arg"
                 else
-                    die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
+                    die "$arg: il ne faut spécifier que deux espaces de travail maximum: celui à créer et la source"
                 fi
             elif [ -n "$shareddir" ]; then
-                die "$arg: vous ne pouvez spécifier le répertoire partagé qu'une seule fois"
+                die "$arg: il ne faut spécifier le répertoire partagé qu'une seule fois"
             else
                 shareddir="$arg"
             fi
@@ -170,29 +173,29 @@ function create_workspace() {
             setx filename=basename "$arg"
             case "$filename" in
             rdd-tools_*.tar)
-                [ -n "$rddtools" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier image"
+                [ -n "$rddtools" ] && die "$arg: il ne faut spécifier qu'un seul fichier image"
                 rddtools="$arg"
                 ;;
             mypegase_*.env)
-                [ -n "$mypegase" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'environnement"
+                [ -n "$mypegase" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'environnement"
                 mypegase="$arg"
                 ;;
             rdd-tools-pivot_*.tar.gz)
-                [ -n "$pivotbdd" ] && die "$arg: vous ne pouvez spécifier qu'une seule définition de base pivot"
+                [ -n "$pivotbdd" ] && die "$arg: il ne faut spécifier qu'une seule définition de base pivot"
                 pivotbdd="$arg"
                 ;;
             RDD-scripts-externes_*.zip)
-                [ -n "$scriptx" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier de scripts externes"
+                [ -n "$scriptx" ] && die "$arg: il ne faut spécifier qu'un seul fichier de scripts externes"
                 scriptx="$arg"
                 ;;
             RDD-init-transco-apogee_*.zip|RDD-init-transco-scolarix_*.zip|RDD-init-transco-sve_*.zip|RDD-init-transco-vierge_*.zip)
-                [ -n "$initsrc" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'initialisation et de transcodification"
+                [ -n "$initsrc" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation et de transcodification"
                 initsrc="$arg"
                 source="${arg#RDD-init-transco-}"
                 source="${source%_*}"
                 ;;
             RDD-init-habilitations-personnes_*.zip)
-                [ -n "$initph" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'initialisation des personnes et des habilitations"
+                [ -n "$initph" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation des personnes et des habilitations"
                 initph="$arg"
                 ;;
             *) die "$arg: fichier non reconnu";;
@@ -200,69 +203,162 @@ function create_workspace() {
         else
             # autres
             local major minor patch
-            if [ -d "$RDDMGR/$arg" ]; then
-                if [ -z "$wsdir" ]; then
-                    wsdir="$arg"
-                elif [ -z "$source_wsdir" ]; then
-                    source_wsdir="$arg"
-                else
-                    die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
+            case "$arg" in
+            c=*|create=*)
+                if [ "${arg#c=}" != "$arg" ]; then arg="${arg#c=}"
+                elif [ "${arg#create=}" != "$arg" ]; then arg="${arg#create=}"
                 fi
-            elif [ -d "$RDDMGR/$arg.works" ]; then
-                arg="$arg.works"
-                if [ -z "$wsdir" ]; then
-                    wsdir="$arg"
-                elif [ -z "$source_wsdir" ]; then
-                    source_wsdir="$arg"
-                else
-                    die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
-                fi
-            elif is_version "$arg"; then
-                set_version "$arg"
-            elif is_vxx "$arg"; then
-                set_vxx "$arg"
-            elif is_devxx "$arg"; then
-                set_devxx "$arg"
-            elif [[ "$arg" == *.*.* ]]; then
-                check_version "$arg"
-                set_version "$arg"
-            elif [[ "$arg" == 0.1.0-dev.* ]]; then
-                check_devxx "$arg"
-                set_devxx "$arg"
-            elif [[ "$arg" == dev* ]] && ispnum "${arg#dev}"; then
-                arg=0.1.0-dev."${arg#dev}"
-                check_devxx "$arg"
-                set_devxx "$arg"
-            elif [ "$arg" == apogee -o "$arg" == scolarix -o "$arg" == sve -o "$arg" == vierge ]; then
-                source="$arg"
-            elif [ -z "$wsdir" ]; then
+                [ -n "$wsdir" ] && ewarn "$arg: écrasement de la valeur précédente de la destination"
                 wsdir="$arg"
-            else
-                die "$arg: version/valeur non reconnue"
-            fi
+                ;;
+            s=*|source=)
+                if [ "${arg#s=}" != "$arg" ]; then arg="${arg#s=}"
+                elif [ "${arg#source=}" != "$arg" ]; then arg="${arg#source=}"
+                fi
+                [ -n "$source_wsdir" ] && ewarn "$arg: écrasement de la valeur précédente de la source"
+                source_wsdir="$arg"
+                ;;
+            r=*|shared=)
+                if [ "${arg#r=}" != "$arg" ]; then arg="${arg#r=}"
+                elif [ "${arg#shared=}" != "$arg" ]; then arg="${arg#shared=}"
+                fi
+                [ -n "$shareddir" ] && ewarn "$arg: écrasement de la valeur précédente du répertoire partagé"
+                shareddir="$arg"
+                ;;
+            v=*|version=)
+                if [ "${arg#v=}" != "$arg" ]; then arg="${arg#v=}"
+                elif [ "${arg#version=}" != "$arg" ]; then arg="${arg#version=}"
+                fi
+                if is_version "$arg"; then
+                    set_version "$arg"
+                elif is_vxx "$arg"; then
+                    set_vxx "$arg"
+                elif is_devxx "$arg"; then
+                    set_devxx "$arg"
+                else
+                    set_version "$arg"
+                fi
+                ;;
+            i=*|image=*)
+                if [ "${arg#i=}" != "$arg" ]; then arg="${arg#i=}"
+                elif [ "${arg#image=}" != "$arg" ]; then arg="${arg#image=}"
+                fi
+                [ -n "$rddtools" ] && ewarn "$arg: écrasement de la valeur précédente du fichier image"
+                rddtools="$arg"
+                ;;
+            e=*|m=*|env=*|mypegase=*)
+                if [ "${arg#e=}" != "$arg" ]; then arg="${arg#e=}"
+                elif [ "${arg#m=}" != "$arg" ]; then arg="${arg#m=}"
+                elif [ "${arg#env=}" != "$arg" ]; then arg="${arg#env=}"
+                elif [ "${arg#mypegase=}" != "$arg" ]; then arg="${arg#mypegase=}"
+                fi
+                [ -n "$mypegase" ] && ewarn "$arg: écrasement de la valeur précédente du fichier d'environnement"
+                mypegase="$arg"
+                ;;
+            p=*|b=*|pivot=*|bdd=*|pivotbdd=*)
+                if [ "${arg#p=}" != "$arg" ]; then arg="${arg#p=}"
+                elif [ "${arg#b=}" != "$arg" ]; then arg="${arg#b=}"
+                elif [ "${arg#pivot=}" != "$arg" ]; then arg="${arg#pivot=}"
+                elif [ "${arg#bdd=}" != "$arg" ]; then arg="${arg#bdd=}"
+                elif [ "${arg#pivotbdd=}" != "$arg" ]; then arg="${arg#pivotbdd=}"
+                fi
+                [ -n "$pivotbdd" ] && ewarn "$arg: écrasement de la valeur précédente de la définition de base pivot"
+                pivotbdd="$arg"
+                ;;
+            apogee|scolarix|sve|vierge)
+                source="$arg"
+                ;;
+            *)
+                if [ -d "$RDDMGR/$arg" ]; then
+                    if [ -z "$wsdir" -a -z "$version" ]; then
+                        wsdir="$arg"
+                    elif [ -z "$source_wsdir" ]; then
+                        source_wsdir="$arg"
+                    elif [ -z "$wsdir" ]; then
+                        wsdir="$arg"
+                    else
+                        die "$arg: il ne faut spécifier que deux espaces de travail maximum: celui à créer et la source"
+                    fi
+                elif [ -d "$RDDMGR/$arg.works" ]; then
+                    arg="$arg.works"
+                    if [ -z "$wsdir" -a -z "$version" ]; then
+                        wsdir="$arg"
+                    elif [ -z "$source_wsdir" ]; then
+                        source_wsdir="$arg"
+                    elif [ -z "$wsdir" ]; then
+                        wsdir="$arg"
+                    else
+                        die "$arg: il ne faut spécifier que deux espaces de travail maximum: celui à créer et la source"
+                    fi
+                elif is_version "$arg"; then
+                    set_version "$arg"
+                elif is_vxx "$arg"; then
+                    set_vxx "$arg"
+                elif is_devxx "$arg"; then
+                    set_devxx "$arg"
+                elif [[ "$arg" == *.*.* ]]; then
+                    check_version "$arg"
+                    set_version "$arg"
+                elif [[ "$arg" == 0.1.0-dev.* ]]; then
+                    check_devxx "$arg"
+                    set_devxx "$arg"
+                elif [[ "$arg" == dev.* ]] && ispnum "${arg#dev.}"; then
+                    arg=0.1.0-dev."${arg#dev.}"
+                    check_devxx "$arg"
+                    set_devxx "$arg"
+                elif [[ "$arg" == dev* ]] && ispnum "${arg#dev}"; then
+                    arg=0.1.0-dev."${arg#dev}"
+                    check_devxx "$arg"
+                    set_devxx "$arg"
+                elif [ -z "$wsdir" ]; then
+                    wsdir="$arg"
+                else
+                    die "$arg: version/valeur non reconnue"
+                fi
+                ;;
+            esac
         fi
     done
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## calcul de la version
-    if [ -z "$version" ]; then
-        if [ -n "$rddtools" ]; then
-            setx arg=basename "$rddtools"
-            arg="${arg#rdd-tools_}"
-            arg="${arg%.tar}"
-        else
-            die "Vous devez spécifier la version de l'image"
-        fi
-    fi
-    if [ -z "$vxx" -a -z "$devxx" ]; then
-        vxx="V${version%%.*}"
+
+    if [ -n "$source_wsdir" ]; then
+        setx source_wsdir=abspath "$source_wsdir" "$RDDMGR"
+        [ "${source_wsdir#$RDDMGR/}" != "$source_wsdir" ] || die "$source_wsdir: l'espace de travail doit être dans le répertoire rddmgr"
+        setx source_wsdir=basename "$source_wsdir"
+        source_wsdir="${source_wsdir%.works}.works"
+
+        # si on a un répertoire source, calculer les versions par défaut depuis
+        # ce répertoire
+        eval "$(
+          source "$RDDMGR/$source_wsdir/.env"
+          echo_setv dvrddtools="$RDDTOOLS_VERSION"
+          echo_setv dvmypegase="$MYPEGASE_VERSION"
+          echo_setv dvpivotbdd="$PIVOTBDD_VERSION"
+        )"
     fi
 
     if [ -z "$wsdir" ]; then
-        if [ -n "$vxx" ]; then
-            wsdir="${vxx,,}"
-        elif [ -n "$devxx" ]; then
+        if [ -n "$devxx" ]; then
             wsdir="dev$devxx"
+        elif [ -n "$version" ]; then
+            wsdir="v${version%%.*}"
+        elif [ -n "$vxx" ]; then
+            wsdir="${vxx,,}"
+        elif [ -n "$rddtools" ]; then
+            setx arg=basename "$rddtools"
+            arg="${arg#rdd-tools_}"
+            arg="${arg%.tar}"
+            if is_devxx "$arg"; then
+                set_devxx "$arg"
+                wsdir="dev$devxx"
+            else
+                set_version "$arg"
+                wsdir="v${version%%.*}"
+            fi
+        else
+            die "Vous devez spécifier la version de l'image"
         fi
         [ -n "$wsdir" ] && enote "Sélection automatique de $wsdir.works d'après la version $version"
     fi
@@ -274,21 +370,22 @@ function create_workspace() {
     wsdir="${wsdir%.works}.works"
     [ -d "$RDDMGR/$wsdir" -a -z "$Recreate" ] && die "$wsdir: cet espace de travail existe déjà"
 
-    if [ -n "$source_wsdir" ]; then
-        setx source_wsdir=abspath "$source_wsdir" "$RDDMGR"
-        [ "${source_wsdir#$RDDMGR/}" != "$source_wsdir" ] || die "$source_wsdir: l'espace de travail doit être dans le répertoire rddmgr"
-        setx source_wsdir=basename "$source_wsdir"
-        source_wsdir="${source_wsdir%.works}.works"
+    if [ -z "$version" ]; then
+        version="$dvrddtools"
+        [ -n "$version" ] || die "Vous devez spécifier la version de l'image"
+        set_version "$version"
     fi
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## Calcul des sources
-    local -a files; local file
+
+    local -a files; local file v
     if [ -z "$rddtools" ]; then
+        v="$version"
         files=()
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools_$version.tar")
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"rdd-tools_$version.tar")
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools_"*.tar)
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools_$v.tar")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"rdd-tools_$v.tar")
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools_$v.tar")
         for file in "${files[@]}"; do
             if [ -f "$file" ]; then
                 rddtools="$file"
@@ -297,10 +394,12 @@ function create_workspace() {
         done
     fi
     if [ -z "$mypegase" ]; then
+        v="$dvmypegase"
+        [ -n "$v" ] || v="$version"
         files=()
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/mypegase_$version.env")
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"mypegase_$version.env")
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/mypegase_"*.env)
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/mypegase_$v.env")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"mypegase_$v.env")
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/mypegase_$v.env")
         for file in "${files[@]}"; do
             if [ -f "$file" ]; then
                 mypegase="$file"
@@ -309,10 +408,12 @@ function create_workspace() {
         done
     fi
     if [ -z "$pivotbdd" ]; then
+        v="$dvpivotbdd"
+        [ -n "$v" ] || v="$version"
         files=()
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools-pivot_$version"{/,.tar.gz})
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"rdd-tools-pivot_$version.tar.gz")
-        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools-pivot_"{*/,*.tar.gz})
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools-pivot_$v"{/,.tar.gz})
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"rdd-tools-pivot_$v.tar.gz")
+        [ -n "$source_wsdir" ] && files+=("$source_wsdir/init/rdd-tools-pivot_$v"{/,.tar.gz})
         for file in "${files[@]}"; do
             if [ -d "$file" ]; then
                 pivotbdd="${file%/}"
@@ -614,7 +715,7 @@ function create_workspace() {
         if [ -f "$scriptx" ]; then
             estep "Extraction de l'archive"
             mkdir -p "$scripts_externes" || die
-            unzip -q "$scriptx" -d "$scripts_externes" || die
+            unzip -q -j "$scriptx" -d "$scripts_externes" || die
 
             #estep "Suppression de l'archive source"
             #rm "$scriptx" || die
@@ -647,7 +748,7 @@ function create_workspace() {
                 estep "Extraction de l'archive"
                 mkdir -p "$fichiers_transco" || die
                 unzip -q -j "$initsrc" -d "$fichiers_transco" || die
-                mkdir -p "$wsdirinit/$initsrcdir"
+                mkdir -p "$fichiers_transco/$initsrcdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initsrc" || die
@@ -675,7 +776,7 @@ function create_workspace() {
                 estep "Extraction de l'archive"
                 mkdir -p "$fichiers_transco" || die
                 unzip -q -j "$initph" -d "$fichiers_transco" || die
-                mkdir -p "$wsdirinit/$initphdir"
+                mkdir -p "$fichiers_transco/$initphdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initph" || die
@@ -808,7 +909,7 @@ function stop_services() {
     local -a services; _set_services "$@"
 
     for service in "${services[@]}"; do
-        "$RDDMGR/$service/rddtools" -s || die
+        "$RDDMGR/$service/rddtools" -k || die
     done
 
     if [ -n "$default" ]; then
@@ -867,6 +968,27 @@ function restart_pivotbdd() {
     start_pivotbdd "$@"
 }
 
+function list_envs() {
+    local -a envnames; local envname current
+    if [ -L "$WSDIR/current.env" ]; then
+        current="$(readlink "$WSDIR/current.env")"
+        current="${current#envs/}"
+    fi
+    setx -a envnames=ls_files "$WSDIR/envs" "*.env"
+    if [ ${#envnames[*]} -gt 0 ]; then
+        esection "Liste des environnements"
+        for envname in "${envnames[@]}"; do
+            if [ "$envname" == "$current" ]; then
+                estep "$envname (environnement courant)"
+            else
+                estep "$envname"
+            fi
+        done
+    else
+        ewarn "Il n'y a pas d'environnement pour le moment. Utilisez l'option -e pour en créer un"
+    fi
+}
+
 function ensure_system_ymls() {
     if [ -f "$WSDIR/config/pegase.yml" ]; then
         pegase_yml="$WSDIR/config/pegase.yml"
@@ -883,27 +1005,26 @@ function ensure_system_ymls() {
         die "le fichier config/sources.yml est requis"
     fi
 }
+
 function ensure_user_env() {
     mkdir -p "$WSDIR/envs"
 
     local previous
-    if [ -L "$WSDIR/current.env" ]; then
+    if [ -L "$WSDIR/current.env" -a -f "$WSDIR/current.env" ]; then
         previous="$(readlink "$WSDIR/current.env")"
         previous="${previous#envs/}"
-        if [ -f "$WSDIR/current.env" ]; then
-            eval "$(cat "$WSDIR/current.env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
-        fi
+        eval "$(cat "$WSDIR/current.env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
     fi
-    [ -n "$Envname" ] || Envname="$previous"
-
-    if [ -z "$Envname" ]; then
-        ewarn "Aucun environnement n'est défini ou sélectionné"
-        Envname=default
+    if [ -n "$ForceCreate" ]; then
+        Envname=
+    else
+        [ -n "$Envname" ] || Envname="$previous"
+        [ -n "$Envname" ] || ewarn "Aucun environnement n'est défini ou sélectionné"
     fi
-    Envname="${Envname%.env}.env"
 
-    if [ ! -f "$WSDIR/envs/$Envname" ]; then
-        ask_yesno "L'environnement $Envname n'existe pas. Voulez-vous le créer?" O || die
+    [ -n "$Envname" ] && Envname="${Envname%.env}.env"
+    if [ -z "$Envname" -o ! -f "$WSDIR/envs/$Envname" ]; then
+        einfo "Il faut créer un nouvel environnement"
         eval "$(dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
 
         [ -n "$instance" ] || instance="${instances[0]}"
@@ -921,6 +1042,15 @@ function ensure_user_env() {
         else
             source_profile=
         fi
+
+        if [ -z "$Envname" ]; then
+            Envname="$instance.env"
+            enote "Le nom de l'environnement sera $Envname"
+        elif [[ "$Envname" != *_* ]]; then
+            Envname="${instance}_${Envname}"
+            enote "Le nom a été changé en $Envname"
+        fi
+        ask_yesno "Voulez-vous créer le nouvel environnement $Envname?" O || die
 
         echo >"$WSDIR/envs/$Envname" "\
 # Ces paramètres servent à sélectionner la source des données pour les
@@ -1148,7 +1278,7 @@ function set_version() {
             fi
         fi
     fi
-    upvars version "$version" devxx ""
+    upvars version "$version" vxx "${version%%.*}" devxx ""
 }
 
 function is_vxx() {
@@ -1172,7 +1302,7 @@ function set_vxx() {
     [ -n "$2" ] && tmp="${tmp#$2}"
     [ -n "$3" ] && tmp="${tmp%$3}"
 
-    upvars version "${tmp#[Vv]}.0.0" devxx ""
+    upvars version "${tmp#[Vv]}.0.0" vxx "${tmp^^}" devxx ""
 }
 
 function is_devxx() {
@@ -1196,7 +1326,7 @@ function set_devxx() {
     [ -n "$2" ] && tmp="${tmp#$2}"
     [ -n "$3" ] && tmp="${tmp%$3}"
 
-    upvars version "$tmp" devxx "${tmp#0.1.0-dev.}"
+    upvars version "$tmp" vxx "" devxx "${tmp#0.1.0-dev.}"
 }
 
 function merge_vars() {

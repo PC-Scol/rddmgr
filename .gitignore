@@ -9,6 +9,8 @@
 /default.works
 /*.works/
 
+/.composer.lock
+
 .~lock*#
 .*.swp
 *.pyc

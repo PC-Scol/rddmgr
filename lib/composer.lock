@@ -12,18 +12,23 @@
             "source": {
                 "type": "git",
                 "url": "https://git.univ-reunion.fr/sda-php/nulib.git",
-                "reference": "d7323d7d45a73edf8d033253a6b52ae8a3f6e25e"
+                "reference": "71035b2b594ec59b0636b3bcbf97ecfd3b555e7e"
             },
             "require": {
-                "php": ">=7.3"
+                "php": ">=7.4"
             },
             "require-dev": {
-                "nulib/tests": "7.3"
+                "ext-curl": "*",
+                "nulib/tests": "7.4"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "nulib\\": "php/src_base"
+                    "nulib\\": "php/src_base",
+                    "nulib\\ref\\": "php/src_ref",
+                    "nulib\\php\\": "php/src_php",
+                    "nulib\\output\\": "php/src_output",
+                    "nulib\\web\\": "php/src_web"
                 }
             },
             "autoload-dev": {
@@ -38,7 +43,7 @@
                 }
             ],
             "description": "fonctions et classes essentielles",
-            "time": "2023-12-15T07:45:24+00:00"
+            "time": "2024-01-06T11:09:20+00:00"
         }
     ],
     "packages-dev": [],
