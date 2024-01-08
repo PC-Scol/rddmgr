@@ -161,7 +161,7 @@ function create_workspace() {
                     die "$arg: il ne faut spécifier que l'espace de travail à créer et l'espace de travail source"
                 fi
             elif [ -n "$shareddir" ]; then
-                die "$arg: vous ne pouvez spécifier le répertoire partagé qu'une seule fois"
+                die "$arg: il ne faut spécifier le répertoire partagé qu'une seule fois"
             else
                 shareddir="$arg"
             fi
@@ -170,29 +170,29 @@ function create_workspace() {
             setx filename=basename "$arg"
             case "$filename" in
             rdd-tools_*.tar)
-                [ -n "$rddtools" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier image"
+                [ -n "$rddtools" ] && die "$arg: il ne faut spécifier qu'un seul fichier image"
                 rddtools="$arg"
                 ;;
             mypegase_*.env)
-                [ -n "$mypegase" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'environnement"
+                [ -n "$mypegase" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'environnement"
                 mypegase="$arg"
                 ;;
             rdd-tools-pivot_*.tar.gz)
-                [ -n "$pivotbdd" ] && die "$arg: vous ne pouvez spécifier qu'une seule définition de base pivot"
+                [ -n "$pivotbdd" ] && die "$arg: il ne faut spécifier qu'une seule définition de base pivot"
                 pivotbdd="$arg"
                 ;;
             RDD-scripts-externes_*.zip)
-                [ -n "$scriptx" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier de scripts externes"
+                [ -n "$scriptx" ] && die "$arg: il ne faut spécifier qu'un seul fichier de scripts externes"
                 scriptx="$arg"
                 ;;
             RDD-init-transco-apogee_*.zip|RDD-init-transco-scolarix_*.zip|RDD-init-transco-sve_*.zip|RDD-init-transco-vierge_*.zip)
-                [ -n "$initsrc" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'initialisation et de transcodification"
+                [ -n "$initsrc" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation et de transcodification"
                 initsrc="$arg"
                 source="${arg#RDD-init-transco-}"
                 source="${source%_*}"
                 ;;
             RDD-init-habilitations-personnes_*.zip)
-                [ -n "$initph" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'initialisation des personnes et des habilitations"
+                [ -n "$initph" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation des personnes et des habilitations"
                 initph="$arg"
                 ;;
             *) die "$arg: fichier non reconnu";;
@@ -205,21 +205,21 @@ function create_workspace() {
                 if [ "${arg#c=}" != "$arg" ]; then arg="${arg#c=}"
                 elif [ "${arg#create=}" != "$arg" ]; then arg="${arg#create=}"
                 fi
-                [ -n "$wsdir" ] && die "$arg: vous ne pouvez spécifier qu'une seule destination"
+                [ -n "$wsdir" ] && ewarn "$arg: écrasement de la valeur précédente de la destination"
                 wsdir="$arg"
                 ;;
             s=*|source=)
                 if [ "${arg#s=}" != "$arg" ]; then arg="${arg#s=}"
                 elif [ "${arg#source=}" != "$arg" ]; then arg="${arg#source=}"
                 fi
-                [ -n "$source_wsdir" ] && die "$arg: vous ne pouvez spécifier qu'une seule source"
+                [ -n "$source_wsdir" ] && ewarn "$arg: écrasement de la valeur précédente de la source"
                 source_wsdir="$arg"
                 ;;
             r=*|shared=)
                 if [ "${arg#r=}" != "$arg" ]; then arg="${arg#r=}"
                 elif [ "${arg#shared=}" != "$arg" ]; then arg="${arg#shared=}"
                 fi
-                [ -n "$shareddir" ] && die "$arg: vous ne pouvez spécifier qu'une seule source"
+                [ -n "$shareddir" ] && ewarn "$arg: écrasement de la valeur précédente du répertoire partagé"
                 shareddir="$arg"
                 ;;
             #v=*|version=);;
@@ -227,7 +227,7 @@ function create_workspace() {
                 if [ "${arg#i=}" != "$arg" ]; then arg="${arg#i=}"
                 elif [ "${arg#image=}" != "$arg" ]; then arg="${arg#image=}"
                 fi
-                [ -n "$rddtools" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier image"
+                [ -n "$rddtools" ] && ewarn "$arg: écrasement de la valeur précédente du fichier image"
                 rddtools="$arg"
                 ;;
             e=*|m=*|env=*|mypegase=*)
@@ -236,7 +236,7 @@ function create_workspace() {
                 elif [ "${arg#env=}" != "$arg" ]; then arg="${arg#env=}"
                 elif [ "${arg#mypegase=}" != "$arg" ]; then arg="${arg#mypegase=}"
                 fi
-                [ -n "$mypegase" ] && die "$arg: vous ne pouvez spécifier qu'un seul fichier d'environnement"
+                [ -n "$mypegase" ] && ewarn "$arg: écrasement de la valeur précédente du fichier d'environnement"
                 mypegase="$arg"
                 ;;
             p=*|b=*|pivot=*|bdd=*|pivotbdd=*)
@@ -246,7 +246,7 @@ function create_workspace() {
                 elif [ "${arg#bdd=}" != "$arg" ]; then arg="${arg#bdd=}"
                 elif [ "${arg#pivotbdd=}" != "$arg" ]; then arg="${arg#pivotbdd=}"
                 fi
-                [ -n "$pivotbdd" ] && die "$arg: vous ne pouvez spécifier qu'une seule définition de base pivot"
+                [ -n "$pivotbdd" ] && ewarn "$arg: écrasement de la valeur précédente de la définition de base pivot"
                 pivotbdd="$arg"
                 ;;
             apogee|scolarix|sve|vierge)
