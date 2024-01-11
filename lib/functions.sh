@@ -1028,7 +1028,7 @@ function ensure_user_env() {
         eval "$(dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
 
         [ -n "$instance" ] || instance="${instances[0]}"
-        simple_menu instance instances -t "Choix de l'instance" -m "Veuillez choisir l'instance attaquée pour les injections"
+        simple_menu instance instances -t "Choix de l'instance PEGASE" -m "Veuillez choisir l'instance attaquée pour les injections"
 
         sources+=("pas de source")
         [ "$source" == none ] && source="pas de source"
@@ -1038,7 +1038,7 @@ function ensure_user_env() {
         if [ "$source" != none ]; then
             source_profiles="${source}_profiles[@]"; source_profiles=("${!source_profiles}")
             [ -n "$source_profile" ] || source_profile="${source_profiles[0]}"
-            simple_menu source_profile source_profiles -t "Choix du profil" -m "Veuillez choisir le profil de la source de données"
+            simple_menu source_profile source_profiles -t "Choix du profil ${source^^}" -m "Veuillez choisir le profil de la source de données"
         else
             source_profile=
         fi
