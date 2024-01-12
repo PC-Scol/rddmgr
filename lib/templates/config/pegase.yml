@@ -1,7 +1,8 @@
 # -*- coding: utf-8 mode: yaml -*- vim:sw=2:sts=2:et:ai:si:sta:fenc=utf-8
 
-# le domaine établissement utilisé pour construire les URLs d'accès aux instances
-domaine_etab: univ-ville
+# le domaine établissement utilisé pour construire les URLs d'accès aux
+# instances, e.g univ-ville
+domaine_etab: DOMAINEETABLISSEMENT
 
 # UAI de l'établissement
 uai_etab: XXXXXXX
@@ -16,8 +17,11 @@ http_proxy:
 https_proxy:
 no_proxy:
 
+# Liste des instances PEGASE
+# si le fichier Keepass2 est utilisé, les noms des instances PEGASE doivent correspondre aux noms des groupes du fichier Keepass2
+# sinon, il est possible de spécifier les mots de passe directement dans les clés accounts
 instances:
-  prod:
+  Prod:
     accounts:
       svc-rdd:
       svc-authz-admin:
@@ -32,15 +36,21 @@ instances:
     #  ins: https://ins.DOMAINEETABLISSEMENT.pc-scol.fr
     #  chc: https://chc.DOMAINEETABLISSEMENT.pc-scol.fr
     #  coc: https://coc.DOMAINEETABLISSEMENT.pc-scol.fr
-  test:
+  Test:
     accounts:
       svc-rdd:
       svc-authz-admin:
-  rdd:
+  RDD:
     accounts:
       svc-rdd:
       svc-authz-admin:
-  pilote:
+  Pilote:
     accounts:
       svc-rdd:
       svc-authz-admin:
+
+# Fichier Keepass2 contenant les mots de passe des instances définies ci-dessus
+keepass:
+  kdbfile:
+  keyfile:
+  masterpw:

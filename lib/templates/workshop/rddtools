@@ -3,7 +3,7 @@
 MYDIR="$(dirname "$0")"
 "$MYDIR/../lib/sbin/bootstrap" && source "$MYDIR/../lib/vendor/nulib/php/load.sh" || exit 1
 RDDMGR="${MYDIR%/*}"
-WSDIR="$MYDIR"
+WKSDIR="$MYDIR"
 source "$RDDMGR/lib/functions.sh" || exit 1
 
 action=rddtools
@@ -20,20 +20,22 @@ args=(
     -r,--restart action=restart "Démarrer la base pivot"
     --no-build BuildBefore= "++Ne pas (re)construire les images avant de démarrer les services"
     -l,--list action=list "Lister les environnements"
-    -c,--create ForceCreate=1 "Créer un nouvel environnement"
     -e:,--env Envname= "Spécifier l'environnement à utiliser"
+    -c,--create ForceCreate=1 "Forcer la création d'un nouvel environnement. Le nom de l'environnement à créer doit être spécifié avec l'option --env ci-dessus"
+    -m,--edit action=edit "Editer le fichier d'environnement"
     -d,--debug Debug=1 "Lancer la tâche en mode debug (debug_job=O)"
     -g,--clean-after CleanAfter=1 "++Indiquer s'il faut supprimer l'environnement système après exécution de la tâche"
 )
 parse_args "$@"; set -- "${args[@]}"
 
-load_config "" "$WSDIR/.env"
+load_config "" "$WKSDIR/.env"
 
 case "$action" in
 start) start_pivotbdd "$@";;
 stop) stop_pivotbdd "$@";;
 restart) restart_pivotbdd "$@";;
 list) list_envs "$@";;
+edit) edit_env "$@";;
 rddtools) run_rddtools "$@";;
 *) die "$action: action non implémentée";;
 esac

@@ -15,7 +15,11 @@ config/secrets.conf
 : mots de passe traefik, pgadmin, comptes de la base pivot
 
 config/pegase.yml
-: configuration de l'établissement et des instances PEGASE
+: configuration de l'établissement et des instances PEGASE.
+
+  NB: le support de la lecture des mots de passe depuis le fichier Keepass2
+  n'est pas encore implémenté. Il faut donc spécifier les mots de passe
+  directement dans le fichier de configuration
 
 config/sources.yml
 : configuration des sources de données pour le déversement
@@ -28,7 +32,7 @@ config/rddmgr.conf
 : configurations diverses pour rddmgr
 
 IL FAUT vérifier et renseigner ces fichiers AVANT de continuer. Ne pas oublier
-de copier le fichier `ojdbc8.jar` dans le répertoire config/lib-ext/
+de copier le fichier `ojdbc8.jar` dans le répertoire `config/lib-ext/`
 
 Une fois la configuration mise à jour, relancer l'initialisation:
 ~~~sh
@@ -40,13 +44,18 @@ On peut maintenant démarrer traefik et pgadmin
 ./rddmgr
 ~~~
 
-## Création d'un espace de travail
+## Création d'un atelier
 
-Il faut maintenant créer un espace de travail.
-
-Dans l'exemple suivant, on crée l'espace de travail pour les rdd-tools 22.0.0:
+Il faut maintenant créer un atelier. Il est possible d'avoir une vue d'ensemble
+des options disponibles avec l'option --help
 ~~~sh
-./rddmgr -c 22
+./rddmgr --help
+~~~
+
+Dans l'exemple suivant, on crée l'atelier pour les rdd-tools 22.0.0, et dont la
+source de données est apogee:
+~~~sh
+./rddmgr -c 22 apogee
 ~~~
 Les fichiers nécessaires sont téléchargés depuis l'espace partagé de PC-SCOL
 
@@ -66,17 +75,27 @@ RDD-init-transco-apogee_22.0.0.zip
 $ ./rddmgr -c 22 path/to/dl
 ~~~
 
-L'espace de travail `v22.works` est créé, et la base pivot associée est
-démarrée. Il faut maintenant créer un environnement.
+L'atelier `v22.wks` est créé, et la base pivot associée est démarrée. Il
+faut maintenant créer un environnement.
 
-Lancer rddtools sans argument crée un environnement par défaut s'il n'en existe
-pas déjà un. L'option -c force la création d'un nouvel environnement.
+Si on lance rddtools sans arguments:
+* S'il existe des environnements et qu'aucun n'est sélectionné, le premier est
+  automatiquement sélectionné
+* S'il n'existe aucun environnement, un environnement est automatiquement créé
+  et sélectionné
+
 L'option -e permet de sélectionner un environnement, qui sera créé s'il n'existe
-pas déjà. Dans cet exemple, on crée un environnement nommé 'rdd':
-~~~sh
-cd v22.works
+pas déjà.
 
-./rddtools -e rdd
+L'option -c force la création d'un nouvel environnement, même si un
+environnement est déjà sélectionné.
+
+Dans l'exemple suivant, on crée un environnement qui sera nommé en fonction de
+l'instance PEGASE cible sélectionnée:
+~~~sh
+cd v22.wks
+
+./rddtools -c
 ~~~
 
 Lors de la création de l'environnement, il faut choisir:
@@ -85,14 +104,14 @@ Lors de la création de l'environnement, il faut choisir:
 - la source de données qui sera utilisée pour les déversements, ainsi que le
   profil de connexion
 - le nom final de l'environnement est toujours préfixé du nom de l'instance
-  pegase.
+  PEGASE.
 
 IMPORTANT: Il est possible de créer autant d'environnements que nécessaire.
-Cependant, dans cette version de rddmgr, tous les environnements partagent la
-même base pivot.  Leur intérêt se limite donc à préparer des données à injecter
-à l'identique dans plusieurs instances.
+Cependant, dans cette version de rddmgr, tous les environnements d'un atelier
+partagent la même base pivot. Leur intérêt se limite donc à préparer des
+données à injecter à l'identique dans plusieurs instances.
 
-## Création d'un espace de travail pour une version de développement
+## Création d'un atelier pour une version de développement
 
 Parfois, PC-SCOL livre une version de développement à un établissement, pour
 vérifier la validité d'un correctif par exemple. La particularité de ce genre de
@@ -102,20 +121,19 @@ base pivot ne sont pas forcément les mêmes.
 Par exemple, l'image de version 0.1.0-dev.894 utilise un fichier d'environnement
 de la version 22.0.0
 
-On peut créer un espace de travail basé sur un autre, ce qui permet de récupérer
-tout ce qui ne change pas. Par exemple, la commande suivante crée un espace de
-travail pour l'image de version 0.1.0-dev.894, tout en copiant le fichier
-d'environnement et la définition de la base pivot depuis l'espace de travail
-v22.works existant:
+On peut créer un atelier basé sur un autre, ce qui permet de récupérer tout ce
+qui ne change pas. Par exemple, la commande suivante crée un atelier pour
+l'image de version 0.1.0-dev.894, tout en copiant le fichier d'environnement et
+la définition de la base pivot depuis l'atelier v22.wks existant:
 ~~~sh
-./rddmgr -c dev894 v22.works
+./rddmgr -c dev894 v22.wks
 ~~~
 
 Dans l'exemple suivant, les versions de l'image et du fichier d'environnement
 sont différents. Dans ce cas, il est nécessaire de spécifier chacun des
 fichiers en plus de la source le cas échéant:
 ~~~sh
-./rddmgr -c rdd-tools_0.1.0-dev.875.tar mypegase_0.1.0-dev.870.env v22.works
+./rddmgr -c rdd-tools_0.1.0-dev.875.tar mypegase_0.1.0-dev.870.env v22.wks
 ~~~
 
 # Notions et architectures
@@ -123,7 +141,7 @@ fichiers en plus de la source le cas échéant:
 ## rddmgr
 
 Une installation de rddmgr contient des services (traefik, pgAdmin), un ou
-plusieurs espaces de travail, et des données partagées
+plusieurs ateliers, et des données partagées
 
 traefik.service
 : frontal web qui permet de servir tous les services de l'installation sur une
@@ -134,21 +152,19 @@ pgAdmin.service
   bases pivot définies
 
 fichiers-transco/
-: Fichiers d'initialisation et de transcodifications, commun à tous les espaces
-  de travail
+: Fichiers d'initialisation et de transcodifications, commun à tous les ateliers
 
 scripts-externes/
-: Scripts externes utilisables par rddtools, commun à tous les espaces de
-  travail
+: Scripts externes utilisables par rddtools, commun à tous les ateliers
 
 backups/
-: Sauvegardes de la base pivot classées par espace de travail
+: Sauvegardes de la base pivot classées par atelier
 
-## Espace de travail
+## Atelier
 
-Un espace de travail est caractérisé par une version d'image de rddtools, une
-version de mypegase.env et une version de la base pivot. Il est dans un
-répertoire de la forme `MON-ESPACE.works`
+Un atelier est caractérisé par une version d'image de rddtools, une version de
+mypegase.env et une version de la base pivot. Il est dans un répertoire de la
+forme `MONATELIER.wks`
 
 envs/
 : fichier de paramètres pour les environnements
@@ -158,9 +174,9 @@ logs/
 
 ## Environnement
 
-Dans un espace de travail, un environnement est caractérisé par ses paramètres,
-notament instance PEGASE qu'il attaque, source de données pour le déversement,
-et paramétrages divers nécessaires au déversement et à l'injection.
+Dans un atelier, un environnement est caractérisé par ses paramètres, notament
+instance PEGASE qu'il attaque, source de données pour le déversement, et
+paramétrages divers nécessaires au déversement et à l'injection.
 
 IMPORTANT: à terme, chaque environnement pourra avoir sa propre base pivot. Ce
 n'est pas le cas dans cette version de rddmgr.
@@ -170,7 +186,7 @@ n'est pas le cas dans cette version de rddmgr.
 ## pgAdmin
 
 pgAdmin est lancé par défaut par rddmgr. Il permet d'accéder aux bases de
-données pivot des espaces de travail.
+données pivot des ateliers.
 
 Dans le fichier config/rddmgr.conf, le paramètre `PGADMIN_LBHOST` permet de
 définir le nom d'hôte sur lequel attaquer pgAdmin. Bien entendu, il faut que ce

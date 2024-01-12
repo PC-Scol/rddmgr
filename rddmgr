@@ -16,21 +16,21 @@ InitPgadmin=
 Recreate=
 BuildBefore=1
 args=(
-    "gestionnaire d'espaces de travail pour la RDD"
-    " -c CREATE_WSDIR FILES..."
+    "gestionnaire d'ateliers"
+    " -c WKSDIR FILES..."
     --bootstrap action=bootstrap "++Mettre à jour les outils en lançant de nouveau lib/sbin/bootstrap"
-    --check check=1 "++Vérifier les espaces de travail avant de lancer une commande"
-    --no-check check= "++Ne pas vérifier les espaces de travail avant de lancer une commande"
-    -0,--init init=1 "Initialiser l'environnement docker nécessaire aux espaces de travail"
+    --check check=1 "++Vérifier les ateliers avant de lancer une commande"
+    --no-check check= "++Ne pas vérifier les ateliers avant de lancer une commande"
+    -0,--init init=1 "Initialiser l'environnement docker nécessaire aux ateliers"
     --reinit Reinit=1 "++Forcer l'initialisation même si elle a déjà été faite"
     --init-networks '$init_auto=; InitNetworks=1' "++Faire uniquement l'initialisation des réseaux"
     --init-traefik '$init_auto=; InitTraefik=1' "++Faire uniquement l'initialisation du frontal"
     --init-pgadmin '$init_auto=; InitPgadmin=1' "++Faire uniquement l'initialisation de pgadmin"
-    -l,--lists action=list "Lister les espaces de travail"
-    -c,--create action=create "Créer un nouvel espace de travail.
+    -l,--lists action=list "Lister les ateliers"
+    -c,--create action=create "Créer un nouvel atelier.
 Il faut fournir comme argument supplémentaire une ou plusieurs des informations suivantes:
-- [create=]WSDIR -- le nom de l'environnement à créer
-- [source=]SOURCE_WSDIR -- un environnement depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après CREATE_WSDIR
+- [create=]WKSDIR -- le nom de l'environnement à créer
+- [source=]SOURCE_WKSDIR -- un environnement depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après WKSDIR
 - [shared=]SHARED_DIR -- chemin vers un répertoire contenant les répertoires rdd-tools, rdd-tools-pivot, fichiers_init_et_transcos téléchargés depuis l'espace partagé $SHARED_URL?p=/RDD&mode=list
 - [version=]VERSION -- version des fichiers à considérer. peut être de la forme 23.0.0 ou 0.1.0-dev.824
 - SOURCE -- une valeur parmi apogee, scolarix, sve ou vierge permettant de sélectionner automatiquement le bon fichier d'initialisation et de transcodification dans SHARED_DIR
@@ -40,11 +40,11 @@ Il faut fournir comme argument supplémentaire une ou plusieurs des informations
 - RDD-scripts-externes_VERSION.zip -- scripts externes à installer
 - RDD-init-habilitations-personnes_VERSION.zip -- fichier d'initialisation des personnes et des habilitations
 - RDD-init-transco-SOURCE_VERSION.zip -- fichier d'initialisation et de transcodification. un seul fichier (et donc une seule SOURCE) doit être sélectionné"
-    --recreate Recreate=1 "++Forcer la (re)création de l'espace de travail même s'il existe déjà"
-    -d,--delete action=delete "Supprimer un espace de travail"
-    -s,--start action=start "Démarrer traefik, pgAdmin, et les services de l'espace de travail par défaut"
-    -k,--stop action=stop "Arrêter traefik, pgAdmin, et les services de l'espace de travail par défaut"
-    -r,--restart action=restart "(Re)démarrer traefik, pgAdmin, et les services de l'espace de travail par défaut"
+    --recreate Recreate=1 "++Forcer la (re)création de l'atelier même s'il existe déjà"
+    -d,--delete action=delete "Supprimer un atelier"
+    -s,--start action=start "Démarrer traefik, pgAdmin, et les services de l'atelier par défaut"
+    -k,--stop action=stop "Arrêter traefik, pgAdmin, et les services de l'atelier par défaut"
+    -r,--restart action=restart "(Re)démarrer traefik, pgAdmin, et les services de l'atelier par défaut"
     --no-build BuildBefore= "++Ne pas (re)construire les images avant de démarrer les services"
 )
 parse_args "$@"; set -- "${args[@]}"
@@ -77,9 +77,9 @@ fi
 case "$action" in
 none) ;;
 bootstrap) "$RDDMGR/lib/sbin/bootstrap" --force "$@";;
-list) list_workspaces;;
-create) create_workspace "$@";;
-delete) delete_workspace "$@";;
+list) list_workshops;;
+create) create_workshop "$@";;
+delete) delete_workshop "$@";;
 start) start_services "$@";;
 stop) stop_services "$@";;
 restart) restart_services "$@";;

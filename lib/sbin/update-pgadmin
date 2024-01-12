@@ -41,19 +41,19 @@ function data_stop() {
 
 [ -z "$debug" ] && exec 6>&1 >pgadmin.service/private/servers.json
 echo '{"Servers": {'
-setx -a wsdirs=ls_dirs . "*.works"
+setx -a wksdirs=ls_dirs . "*.wks"
 i=1
-for wsdir in "${wsdirs[@]}"; do
-    [ "$wsdir" == default.works -a -L default.works ] && continue
+for wksdir in "${wksdirs[@]}"; do
+    [ "$wksdir" == default.wks -a -L default.wks ] && continue
 
-    eval "$(dump-config.py "" "" "$wsdir/.env" --postgres)"
-    wsname="${wsdir%.works}"
+    eval "$(dump-config.py "" "" "$wksdir/.env" --postgres)"
+    wksname="${wksdir%.wks}"
     data_start "$i"
-    data_str Name "$wsdir"
+    data_str Name "$wksdir"
     data_str Group Servers
-    data_str Host "${wsname}_db"
+    data_str Host "${wksname}_db"
     data_int Port 5432
-    data_str Comment "Bases pivots de l'espace de travail $wsname"
+    data_str Comment "Bases pivots de l'atelier $wksname"
     data_str Username pcscolpivot
     data_str PasswordExecCommand "echo '$pcscolpivot_password'"
     data_str SSLMode disable
@@ -70,9 +70,11 @@ if [ -z "$debug" -a -n "$reload" ]; then
         docker=(docker exec -it -w /pgadmin4)
         args=(
             /venv/bin/python setup.py
-            --load-servers servers.json
+            load-servers servers.json
             --replace
         )
         "${docker[@]}" "$ctid" "${args[@]}"
+
+        enote "Si pgAdmin est déjà ouvert dans un onglet, vous pouvez rafraichir la liste des serveurs avec clic-droit sur Servers puis Refresh..."
     fi
 fi

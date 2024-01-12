@@ -25,10 +25,10 @@ parser.add_argument("--local-vars", action="store_true", help="Ajouter la défin
 parser.add_argument("-m", "--fake-passwords", action="store_true", help="Générer des mots de passe bidons lors de l'export")
 
 parser.add_argument("-s", "--instance", help="Sélectionner une instance")
-parser.add_argument("-P", "--prod-instance", dest="instance", action="store_const", const="prod", help="Sélectionner l'instance PROD")
-parser.add_argument("-T", "--test-instance", dest="instance", action="store_const", const="test", help="Sélectionner l'instance TEST")
-parser.add_argument("-R", "--rdd-instance", dest="instance", action="store_const", const="rdd", help="Sélectionner l'instance RDD")
-parser.add_argument("-L", "--pilote-instance", dest="instance", action="store_const", const="pilote", help="Sélectionner l'instance PILOTE")
+parser.add_argument("-P", "--prod-instance", dest="instance", action="store_const", const="Prod", help="Sélectionner l'instance PROD")
+parser.add_argument("-T", "--test-instance", dest="instance", action="store_const", const="Test", help="Sélectionner l'instance TEST")
+parser.add_argument("-R", "--rdd-instance", dest="instance", action="store_const", const="RDD", help="Sélectionner l'instance RDD")
+parser.add_argument("-L", "--pilote-instance", dest="instance", action="store_const", const="Pilote", help="Sélectionner l'instance PILOTE")
 
 parser.add_argument("-d", "--source", help="Sélectionner une source")
 parser.add_argument("-A", "--apogee-source", dest="source", action="store_const", const="apogee", help="Sélectionner la source APOGEE")
@@ -100,7 +100,7 @@ else:
 
         domaine = pdata.get("domaine_etab")
         if not domaine: raise ValueError("Vous devez spécifier le domaine")
-        host = "%s%s.pc-scol.fr" % ("%s-" % instance if instance != "prod" else "", domaine)
+        host = "%s%s.pc-scol.fr" % ("%s-" % instance if instance != "Prod" else "", domaine)
 
         uai = pdata.get("uai_etab")
         if not uai: raise ValueError("Vous devez spécifier l'UAI de l'établissement")
@@ -187,26 +187,26 @@ else:
                 raise ValueError("%s: %s: profil invalide" % (source, profile))
             c = sdata[source][profile]
 
-            password = c["password"] if not args.fake_passwords else "XXX"
+            password = c["password"] or "" if not args.fake_passwords else "XXX"
             if source == "apogee":
-                print("cnx_sourceApg_Server=%s" % c["server"])
-                print("cnx_sourceApg_Port=%s" % c["port"])
-                print("cnx_sourceApg_Database=%s" % c["database"])
-                print("cnx_sourceApg_Login=%s" % c["login"])
+                print("cnx_sourceApg_Server=%s" % (c["server"] or ""))
+                print("cnx_sourceApg_Port=%s" % (c["port"] or ""))
+                print("cnx_sourceApg_Database=%s" % (c["database"] or ""))
+                print("cnx_sourceApg_Login=%s" % (c["login"] or ""))
                 print("cnx_sourceApg_Password=%s" % password)
             elif source == "scolarix":
-                print("cnx_sourceSlx_Server=%s" % c["server"])
-                print("cnx_sourceSlx_Port=%s" % c["port"])
-                print("cnx_sourceSlx_Database=%s" % c["database"])
-                print("cnx_sourceSlx_Schema=%s" % c["schema"])
-                print("cnx_sourceSlx_Login=%s" % c["login"])
+                print("cnx_sourceSlx_Server=%s" % (c["server"] or ""))
+                print("cnx_sourceSlx_Port=%s" % (c["port"] or ""))
+                print("cnx_sourceSlx_Database=%s" % (c["database"] or ""))
+                print("cnx_sourceSlx_Schema=%s" % (c["schema"] or ""))
+                print("cnx_sourceSlx_Login=%s" % (c["login"] or ""))
                 print("cnx_sourceSlx_Password=%s" % password)
             elif source == "sve":
-                print("cnx_sourceSve_Server=%s" % c["server"])
-                print("cnx_sourceSve_Port=%s" % c["port"])
-                print("cnx_sourceSve_Database=%s" % c["database"])
-                print("cnx_sourceSve_Schema=%s" % c["schema"])
-                print("cnx_sourceSve_Login=%s" % c["login"])
+                print("cnx_sourceSve_Server=%s" % (c["server"] or ""))
+                print("cnx_sourceSve_Port=%s" % (c["port"] or ""))
+                print("cnx_sourceSve_Database=%s" % (c["database"] or ""))
+                print("cnx_sourceSve_Schema=%s" % (c["schema"] or ""))
+                print("cnx_sourceSve_Login=%s" % (c["login"] or ""))
                 print("cnx_sourceSve_Password=%s" % password)
             else:
                 raise ValueError("%s: source non supportée" % source)
