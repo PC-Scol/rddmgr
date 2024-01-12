@@ -1,5 +1,5 @@
 # -*- coding: utf-8 mode: dockerfile -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
-FROM dpage/pgadmin4:8.1
+FROM dpage/pgadmin4:8.2
 
 ENV PGADMIN_DISABLE_POSTFIX=1
 ENV PGADMIN_CONFIG_SERVER_MODE="False"
