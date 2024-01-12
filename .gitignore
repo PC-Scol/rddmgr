@@ -1,13 +1,11 @@
-/rddmgr.conf
-/secrets.conf
 /traefik.service/
 /pgadmin.service/
 /config/
 /fichiers-transco/
 /scripts-externes/
 /backups/
-/default.works
-/*.works/
+/default.wks
+/*.wks/
 
 /.composer.lock
 
