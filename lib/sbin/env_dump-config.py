@@ -100,7 +100,8 @@ else:
 
         domaine = pdata.get("domaine_etab")
         if not domaine: raise ValueError("Vous devez spécifier le domaine")
-        host = "%s%s.pc-scol.fr" % ("%s-" % instance if instance != "Prod" else "", domaine)
+        host_prefix = "%s-" % instance if instance != "Prod" else ""
+        host = "%s%s.pc-scol.fr" % (host_prefix.lower(), domaine)
 
         uai = pdata.get("uai_etab")
         if not uai: raise ValueError("Vous devez spécifier l'UAI de l'établissement")
