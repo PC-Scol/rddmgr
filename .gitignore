@@ -1,7 +1,7 @@
 /traefik.service/
 /pgadmin.service/
 /config/
-/fichiers-transco/
+/fichiers-init-transco/
 /scripts-externes/
 /backups/
 /default.wks

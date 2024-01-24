@@ -39,7 +39,7 @@ Une fois la configuration mise à jour, relancer l'initialisation:
 ./rddmgr --init
 ~~~
 
-On peut maintenant démarrer traefik et pgadmin
+On peut maintenant démarrer traefik et pgadmin (--start est l'option par défaut)
 ~~~sh
 ./rddmgr
 ~~~
@@ -87,8 +87,7 @@ Si on lance rddtools sans arguments:
 L'option -e permet de sélectionner un environnement, qui sera créé s'il n'existe
 pas déjà.
 
-L'option -c force la création d'un nouvel environnement, même si un
-environnement est déjà sélectionné.
+L'option -c force la création d'un nouvel environnement
 
 Dans l'exemple suivant, on crée un environnement qui sera nommé en fonction de
 l'instance PEGASE cible sélectionnée:
@@ -129,9 +128,9 @@ la définition de la base pivot depuis l'atelier v22.wks existant:
 ./rddmgr -c dev894 v22.wks
 ~~~
 
-Dans l'exemple suivant, les versions de l'image et du fichier d'environnement
-sont différents. Dans ce cas, il est nécessaire de spécifier chacun des
-fichiers en plus de la source le cas échéant:
+Voici un autre exemple: ici, les versions de l'image de dev et du fichier
+d'environnement sont différents. Les autres fichiers sont copiés depuis
+l'atelier existant:
 ~~~sh
 ./rddmgr -c rdd-tools_0.1.0-dev.875.tar mypegase_0.1.0-dev.870.env v22.wks
 ~~~
@@ -151,7 +150,7 @@ pgAdmin.service
 : installation de pgAdmin en mode desktop qui permet d'accéder à toutes les
   bases pivot définies
 
-fichiers-transco/
+fichiers-init-transco/
 : Fichiers d'initialisation et de transcodifications, commun à tous les ateliers
 
 scripts-externes/
