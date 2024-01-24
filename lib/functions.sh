@@ -848,6 +848,12 @@ function set_default_workshop() {
 }
 
 function _set_services() {
+    if [ $# -eq 0 -a -n "$default_all_services" ]; then
+        # aucun service n'est spécifié: les prendre tous par défaut
+        setx -a services=ls_dirs "$RDDMGR" traefik.service pgadmin.service "*.wks"
+        set -- "${services[@]}"
+        services=()
+    fi
     for service in "$@"; do
         setx service=basename "$service"
         auto=
@@ -870,7 +876,8 @@ function _set_services() {
 }
 
 function start_services() {
-    local auto=1 service traefik pgadmin default
+    local service traefik pgadmin default
+    local auto=1 default_all_services=
     local -a services; _set_services "$@"
 
     if [ -n "$traefik" ]; then
@@ -910,7 +917,8 @@ function start_services() {
 }
 
 function stop_services() {
-    local auto=1 service traefik pgadmin default
+    local service traefik pgadmin default
+    local auto=1 default_all_services=1
     local -a services; _set_services "$@"
 
     for service in "${services[@]}"; do
@@ -942,6 +950,12 @@ function stop_services() {
 }
 
 function restart_services() {
+    local service traefik pgadmin default
+    local auto=1 default_all_services=
+    local -a services; _set_services "$@"
+    set -- "${services[@]}"
+    services=()
+
     stop_services "$@"
     start_services "$@"
 }
