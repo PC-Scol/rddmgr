@@ -14,7 +14,7 @@ def split_proxy(url):
 
 parser = argparse.ArgumentParser(
     usage="%(prog)s -s INSTANCE -d apogee|scolarix|sve|non -p PROFILE pegase.yml sources.yml [.env]",
-    description="Extraire les données de pegase.yml de sources.yml",
+    description="Extraire les données de pegase.yml, sources.yml et wksdir/.env",
 )
 parser.add_argument("pegase", nargs="?", metavar="pegase.yml", help="Fichier de configuration des instances PEGASE")
 parser.add_argument("sources", nargs="?", metavar="sources.yml", help="Fichier contenant les définitions des sources de données")
@@ -100,7 +100,8 @@ else:
 
         domaine = pdata.get("domaine_etab")
         if not domaine: raise ValueError("Vous devez spécifier le domaine")
-        host = "%s%s.pc-scol.fr" % ("%s-" % instance if instance != "Prod" else "", domaine)
+        host_prefix = "%s-" % instance if instance != "Prod" else ""
+        host = "%s%s.pc-scol.fr" % (host_prefix.lower(), domaine)
 
         uai = pdata.get("uai_etab")
         if not uai: raise ValueError("Vous devez spécifier l'UAI de l'établissement")

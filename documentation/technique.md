@@ -181,16 +181,16 @@ Les fichiers sources sont traités différemment selon leur nature:
   déjà. si le répertoire existe déjà, et qu'une nouvelle version de ce fichier
   est livrée, il faudra faire l'intégration manuellement.
 * `RDD-init-transco-*.zip` et `RDD-init-habilitations-personnes_*.zip`: ces
-  archives sont décompressées dans le répertoire `fichiers-transco` à la racine
-  de rddmgr, si ce répertoire n'existe pas déjà. si le répertoire existe déjà,
-  et qu'une nouvelle version de ces fichiers est livrée, il faudra faire
+  archives sont décompressées dans le répertoire `fichiers-init-transco` à la
+  racine de rddmgr, si ce répertoire n'existe pas déjà. si le répertoire existe
+  déjà, et qu'une nouvelle version de ces fichiers est livrée, il faudra faire
   l'intégration manuellement.
 
-les répertoires `scripts-externes` et `fichiers-transco` sont donc partagés par
-tous les ateliers. si le besoin est exprimé, il est possible assez facilement de
-modifier rddmgr pour que ces répertoires puissent si nécessaire être locaux aux
-ateliers, mais dans le cadre de la RDD pour *un* établissement, l'intérêt est
-limité.
+les répertoires `scripts-externes` et `fichiers-init-transco` sont donc partagés
+par tous les ateliers. si le besoin est exprimé, il est possible assez
+facilement de modifier rddmgr pour que ces répertoires puissent si nécessaire
+être locaux aux ateliers, mais dans le cadre de la RDD pour *un* établissement,
+l'intérêt est limité.
 
 Lors de la création d'un atelier, le répertoire `lib/templates/workshop` est
 copié, et l'interpolation des variables de `rddmgr.conf` et `secrets.conf` est
@@ -244,20 +244,20 @@ environnement nommé "myenv":
   PEGASE, à la base pivot, et à la source de données. ce fichier est généré
   automatiquement, et n'est pas censé être modifié par l'utilisateur.
 
-  ce fichier est généré par le script `lib/sbin/dump-config.py` à partir de
+  ce fichier est généré par le script `lib/sbin/env_dump-config.py` à partir de
   `config/pegase.yml` et `config/source.yml` dans la racine de rddmgr et `.env`
   dans le répertoire d'atelier.
 
-  `lib/sbin/dump-config.py` supporte aussi une option où le fichier `.myenv.env`
-  est généré avec des mots de passe bidons, afin qu'il puisse être inclus dans
-  une sauvegarde ou pour transmission à PC-SCOL pour débug
+  `lib/sbin/env_dump-config.py` supporte aussi une option où le fichier
+  `.myenv.env` est généré avec des mots de passe bidons, afin qu'il puisse être
+  inclus dans une sauvegarde ou pour transmission à PC-SCOL pour débug
 
 Quand rdd-tools est lancé:
 * les 3 fichiers d'environnement `init/mypegase.env`, `envs/.myenv.env` et
   `envs/myenv.env` sont chargés dans cet ordre
 * si l'option --debug est utilisée, la valeur du paramètre `debug_job` est
   forcée à `O`
-* les répertoires `fichiers-transco`, `scripts-externes`, `backups` et
+* les répertoires `fichiers-init-transco`, `scripts-externes`, `backups` et
   `config/lib-ext` à la racine de rddmgr sont montés respectivement sur
   `/files`, `/files/scripts-externes`, `/files/backup` et `/lib-ext`
 * le répertoire `logs/<YYYmmdd>T<HHMMSS>` est monté sur `/logs`. De cette façon,
