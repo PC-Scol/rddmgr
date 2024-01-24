@@ -77,12 +77,12 @@ function init_system() {
         done
     fi
 
+    local start_traefik
     if [ -n "$InitTraefik" ]; then
         # image traefik
         if [ -d "$RDDMGR/traefik.service" -a -z "$Reinit" ]; then
             ewarn "le répertoire traefik.service existe: il ne sera pas écrasé"
         else
-            local start_traefik
             if dkrunning rddmgr/traefik-main; then
                 stop_services traefik.service
                 start_traefik=1
@@ -100,12 +100,12 @@ function init_system() {
         fi
     fi
 
+    local start_pgadmin
     if [ -n "$InitPgadmin" ]; then
         # image pgadmin
         if [ -d "$RDDMGR/pgadmin.service" -a -z "$Reinit" ]; then
             ewarn "le répertoire pgadmin.service existe: il ne sera pas écrasé"
         else
-            local start_pgadmin
             if dkrunning rddmgr/pgadmin-main; then
                 stop_services pgadmin.service
                 start_pgadmin=1
@@ -124,6 +124,10 @@ function init_system() {
 
         estep "Mise à jour de la liste des serveurs"
         update-pgadmin
+    fi
+
+    if [ -z "$start_traefik" -a -z "$start_pgadmin" ]; then
+        enote "Utilisez rddmgr --start pour démarrer les services"
     fi
 }
 
