@@ -2,7 +2,7 @@
 # Fonctions de support pour rddmgr
 
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
-FICHIERS_TRANSCO=fichiers-transco
+FICHIERS_INIT_TRANSCO=fichiers-init-transco
 SCRIPTS_EXTERNES=scripts-externes
 BACKUPS=backups
 : "${EDITOR:=nano}"
@@ -550,8 +550,8 @@ function create_workshop() {
         fi
     fi
 
-    if [ -d "$RDDMGR/$FICHIERS_TRANSCO" ]; then
-        enote "$FICHIERS_TRANSCO: le répertoire est présent"
+    if [ -d "$RDDMGR/$FICHIERS_INIT_TRANSCO" ]; then
+        enote "$FICHIERS_INIT_TRANSCO: le répertoire est présent"
         [ -n "$initsrc" ] && ewarn "$initsrc: ce fichier sera ignoré, le répertoire est déjà présent"
         [ -n "$initph" ] && ewarn "$initph: ce fichier sera ignoré, le répertoire est déjà présent"
     elif [ -z "$source" ]; then
@@ -597,10 +597,17 @@ function create_workshop() {
     estep "Copie du répertoire${Recreate:+ avec écrasement}"
     rsync -a "$RDDMGR/lib/templates/workshop/" "$RDDMGR/$wksdir/" || die
 
-    wksdirinit="$RDDMGR/$wksdir/init"
     scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
-    fichiers_transco="$RDDMGR/$FICHIERS_TRANSCO"
+    fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
+    backupsdir="$RDDMGR/$BACKUPS"
+    mkdir -p "$backupsdir" || die
+    chmod 775 "$backupsdir"
+
+    wksdirinit="$RDDMGR/$wksdir/init"
+    logsdir="$RDDMGR/$wksdir/logs"
     mkdir -p "$wksdirinit" || die
+    mkdir -p "$logsdir" || die
+    chmod 775 "$logsdir"
 
     etitle "Image: $RDDTOOLS_IMAGE:$rddtools_version"
     import=1
@@ -716,8 +723,8 @@ function create_workshop() {
     fi
     eend
 
-    if [ -d "$fichiers_transco" ]; then
-        etitle "Fichiers init, transco, personnes et habilitations: $FICHIERS_TRANSCO"
+    if [ -d "$fichiers_init_transco" ]; then
+        etitle "Fichiers init, transco, personnes et habilitations: $FICHIERS_INIT_TRANSCO"
         estep "Le répertoire est déjà présent"
         eend
     else
@@ -739,9 +746,9 @@ function create_workshop() {
         if [ -n "$fixinitsrc" ]; then
             if [ -f "$initsrc" ]; then
                 estep "Extraction de l'archive"
-                mkdir -p "$fichiers_transco" || die
-                unzip -q -j "$initsrc" -d "$fichiers_transco" || die
-                mkdir -p "$fichiers_transco/$initsrcdir"
+                mkdir -p "$fichiers_init_transco" || die
+                unzip -q -j "$initsrc" -d "$fichiers_init_transco" || die
+                mkdir -p "$fichiers_init_transco/$initsrcdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initsrc" || die
@@ -767,9 +774,9 @@ function create_workshop() {
         if [ -n "$fixinitph" ]; then
             if [ -f "$initph" ]; then
                 estep "Extraction de l'archive"
-                mkdir -p "$fichiers_transco" || die
-                unzip -q -j "$initph" -d "$fichiers_transco" || die
-                mkdir -p "$fichiers_transco/$initphdir"
+                mkdir -p "$fichiers_init_transco" || die
+                unzip -q -j "$initph" -d "$fichiers_init_transco" || die
+                mkdir -p "$fichiers_init_transco/$initphdir"
 
                 #estep "Suppression de l'archive source"
                 #rm "$initph" || die
@@ -1131,12 +1138,10 @@ function run_rddtools() {
     run+=(--env-file "$mypegase_env" --env-file "$system_env" --env-file "$user_env")
     [ -n "$Debug" ] && run+=(-e debug_job=O)
     # points de montage
-    local filesdir="$RDDMGR/$FICHIERS_TRANSCO"
+    local filesdir="$RDDMGR/$FICHIERS_INIT_TRANSCO"
     local scriptxsdir="$RDDMGR/$SCRIPTS_EXTERNES"
-    local backupsdir="$RDDMGR/backups"
-    mkdir -p "$backupsdir"; chmod 775 "$backupsdir"
+    local backupsdir="$RDDMGR/$BACKUPS"
     local logsdir="$WKSDIR/logs/$(date +%Y%m%dT%H%M%S)"
-    mkdir -p "$logsdir"; chmod 775 "$logsdir"
 
     run+=(-v "$RDDMGR/config/lib-ext:/lib-ext:ro")
     run+=(-v "$filesdir:/files")
