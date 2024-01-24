@@ -386,7 +386,9 @@ function create_workshop() {
     [ "${wksdir#$RDDMGR/}" != "$wksdir" ] || die "$wksdir: l'atelier doit être dans le répertoire rddmgr"
     setx wksdir=basename "$wksdir"
     wksdir="${wksdir%.wks}.wks"
-    [ -d "$RDDMGR/$wksdir" -a -z "$Recreate" ] && die "$wksdir: cet atelier existe déjà"
+
+    WKSDIR="$RDDMGR/$wksdir"
+    [ -d "$WKSDIR" -a -z "$Recreate" ] && die "$wksdir: cet atelier existe déjà"
 
     if [ -z "$version" ]; then
         version="$svrddtools"
@@ -483,7 +485,7 @@ function create_workshop() {
     ## Calcul des fichiers à copier/télécharger
     esection "Résumé des actions"
 
-    if [ -d "$RDDMGR/$wksdir" ]; then
+    if [ -d "$WKSDIR" ]; then
         enote "$wksdir: ce répertoire existe déjà"
     else
         estep "$wksdir: ce répertoire sera créé"
@@ -518,7 +520,7 @@ function create_workshop() {
         mypegasename="mypegase_$version.env"
         mypegase_version="$version"
     fi
-    if [ -f "$RDDMGR/$wksdir/init/$mypegasename" ]; then
+    if [ -f "$WKSDIR/init/$mypegasename" ]; then
         if [ -n "$mypegase" ]; then
             ewarn "$mypegase: ce fichier sera ignoré, le fichier est déjà présent"
         else
@@ -539,7 +541,7 @@ function create_workshop() {
         pivotbdd_version="$version"
     fi
     pivotbdddir="rdd-tools-pivot_$pivotbdd_version"
-    if [ -d "$RDDMGR/$wksdir/init/$pivotbdddir" ]; then
+    if [ -d "$WKSDIR/init/$pivotbdddir" ]; then
         if [ -n "$pivotbdd" ]; then
             ewarn "$pivotbdd: ce fichier sera ignoré, le répertoire est déjà présent"
         else
@@ -614,8 +616,11 @@ function create_workshop() {
     # Initialiser l'environnement
 
     esection "Création $wksdir"
+
+    stop_pivotbdd
+
     estep "Copie du répertoire${Recreate:+ avec écrasement}"
-    rsync -a "$RDDMGR/lib/templates/workshop/" "$RDDMGR/$wksdir/" || die
+    rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
 
     scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
     fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
@@ -623,8 +628,8 @@ function create_workshop() {
     mkdir -p "$backupsdir" || die
     chmod 775 "$backupsdir"
 
-    wksdirinit="$RDDMGR/$wksdir/init"
-    logsdir="$RDDMGR/$wksdir/logs"
+    wksdirinit="$WKSDIR/init"
+    logsdir="$WKSDIR/logs"
     mkdir -p "$wksdirinit" || die
     mkdir -p "$logsdir" || die
     chmod 775 "$logsdir"
@@ -810,11 +815,11 @@ function create_workshop() {
     RDDTOOLS_VERSION="$rddtools_version"
     MYPEGASE_VERSION="$mypegase_version"
     PIVOTBDD_VERSION="$pivotbdd_version"
-    merge_vars "$RDDMGR/$wksdir"
+    merge_vars "$WKSDIR"
 
     if [ -n "$source_wksdir" -a -d "$RDDMGR/$source_wksdir/envs" ]; then
         estep "Copie des environnements depuis $source_wksdir"
-        cp -a "$RDDMGR/$source_wksdir/envs" "$RDDMGR/$wksdir"
+        cp -a "$RDDMGR/$source_wksdir/envs" "$WKSDIR"
     fi
 
     if [ -z "$devxx" ]; then
@@ -825,7 +830,7 @@ function create_workshop() {
     fi
 
     #estep "Démarrage de la base pivot"
-    "$RDDMGR/$wksdir/rddtools" -r
+    start_pivotbdd
 
     estep "Mise à jour de la liste des serveurs"
     update-pgadmin
@@ -992,20 +997,20 @@ function restart_services() {
 ################################################################################
 
 function start_pivotbdd() {
-    cd "$WKSDIR"
-    if dcrunning rddtools.docker-compose.yml; then
+    local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    if dcrunning "$composefile"; then
         enote "la base pivot est démarrée"
     else
         estep "Démarrage de la base pivot"
-        docker compose -f rddtools.docker-compose.yml up ${BuildBefore:+--build} -d --wait || die
+        docker compose -f "$composefile" up ${BuildBefore:+--build} -d --wait || die
     fi
 }
 
 function stop_pivotbdd() {
-    cd "$WKSDIR"
-    if dcrunning rddtools.docker-compose.yml; then
+    local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    if dcrunning "$composefile"; then
         estep "Arrêt de le base pivot"
-        docker compose -f rddtools.docker-compose.yml down || die
+        docker compose -f "$composefile" down || die
     fi
 }
 
