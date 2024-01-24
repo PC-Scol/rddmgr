@@ -82,11 +82,21 @@ function init_system() {
         if [ -d "$RDDMGR/traefik.service" -a -z "$Reinit" ]; then
             ewarn "le répertoire traefik.service existe: il ne sera pas écrasé"
         else
+            local start_traefik
+            if dkrunning rddmgr/traefik-main; then
+                stop_services traefik.service
+                start_traefik=1
+            fi
+
             estep "Copie du répertoire traefik.service"
             rsync -a "$RDDMGR/lib/templates/traefik.service/" "$RDDMGR/traefik.service" || die
 
             estep "Mise à jour des variables dans les fichiers de traefik.service"
             merge_vars "$RDDMGR/traefik.service"
+
+            if [ -n "$start_traefik" ]; then
+                start_services traefik.service
+            fi
         fi
     fi
 
@@ -95,11 +105,21 @@ function init_system() {
         if [ -d "$RDDMGR/pgadmin.service" -a -z "$Reinit" ]; then
             ewarn "le répertoire pgadmin.service existe: il ne sera pas écrasé"
         else
+            local start_pgadmin
+            if dkrunning rddmgr/pgadmin-main; then
+                stop_services pgadmin.service
+                start_pgadmin=1
+            fi
+
             estep "Copie du répertoire pgadmin.service"
             rsync -a "$RDDMGR/lib/templates/pgadmin.service/" "$RDDMGR/pgadmin.service" || die
 
             estep "Mise à jour des variables dans les fichiers de pgadmin.service"
             merge_vars "$RDDMGR/pgadmin.service"
+
+            if [ -n "$start_pgadmin" ]; then
+                start_services pgadmin.service
+            fi
         fi
 
         estep "Mise à jour de la liste des serveurs"
