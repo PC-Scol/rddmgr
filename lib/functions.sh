@@ -989,9 +989,8 @@ function restart_pivotbdd() {
 
 function list_envs() {
     local -a envnames; local envname current
-    if [ -L "$WKSDIR/current.env" ]; then
-        current="$(readlink "$WKSDIR/current.env")"
-        current="${current#envs/}"
+    if [ -L "$WKSDIR/envs/current" ]; then
+        current="$(readlink "$WKSDIR/envs/current")"
     fi
     setx -a envnames=ls_files "$WKSDIR/envs" "*.env"
     if [ ${#envnames[*]} -gt 0 ]; then
@@ -1029,10 +1028,9 @@ function ensure_user_env() {
     mkdir -p "$WKSDIR/envs"
 
     local previous
-    if [ -L "$WKSDIR/current.env" -a -f "$WKSDIR/current.env" ]; then
-        previous="$(readlink "$WKSDIR/current.env")"
-        previous="${previous#envs/}"
-        eval "$(cat "$WKSDIR/current.env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
+    if [ -L "$WKSDIR/envs/current" -a -f "$WKSDIR/envs/current" ]; then
+        previous="$(readlink "$WKSDIR/envs/current")"
+        eval "$(cat "$WKSDIR/envs/current" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
     fi
     if [ -z "$ForceCreate" ]; then
         [ -n "$Envname" ] || Envname="$previous"
@@ -1092,7 +1090,7 @@ _rddtools_source_profile=$source_profile
     # rendre courant l'environnement sélectionné
     if [ "$Envname" != "$previous" ]; then
         enote "Sélection de l'environnement $Envname"
-        ln -sfT "envs/$Envname" "$WKSDIR/current.env"
+        ln -sfT "$Envname" "$WKSDIR/envs/current"
     fi
 
     eval "$(cat "$user_env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
