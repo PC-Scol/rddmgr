@@ -244,13 +244,13 @@ environnement nommé "myenv":
   PEGASE, à la base pivot, et à la source de données. ce fichier est généré
   automatiquement, et n'est pas censé être modifié par l'utilisateur.
 
-  ce fichier est généré par le script `lib/sbin/dump-config.py` à partir de
+  ce fichier est généré par le script `lib/sbin/env_dump-config.py` à partir de
   `config/pegase.yml` et `config/source.yml` dans la racine de rddmgr et `.env`
   dans le répertoire d'atelier.
 
-  `lib/sbin/dump-config.py` supporte aussi une option où le fichier `.myenv.env`
-  est généré avec des mots de passe bidons, afin qu'il puisse être inclus dans
-  une sauvegarde ou pour transmission à PC-SCOL pour débug
+  `lib/sbin/env_dump-config.py` supporte aussi une option où le fichier
+  `.myenv.env` est généré avec des mots de passe bidons, afin qu'il puisse être
+  inclus dans une sauvegarde ou pour transmission à PC-SCOL pour débug
 
 Quand rdd-tools est lancé:
 * les 3 fichiers d'environnement `init/mypegase.env`, `envs/.myenv.env` et

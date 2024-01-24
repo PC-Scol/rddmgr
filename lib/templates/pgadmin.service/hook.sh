@@ -4,6 +4,6 @@
 sudo /rootfix.sh
 if [ -f /var/lib/pgadmin/pgadmin4.db ]; then
     # Mettre à jour la liste des serveurs au démarrage
-    /venv/bin/python /pgadmin4/setup.py --load-servers /pgadmin4/servers.json --replace
+    /venv/bin/python /pgadmin4/setup.py load-servers /pgadmin4/servers.json --replace
 fi
 exec /entrypoint.sh "$@"

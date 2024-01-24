@@ -18,8 +18,10 @@ https_proxy:
 no_proxy:
 
 # Liste des instances PEGASE
-# si le fichier Keepass2 est utilisé, les noms des instances PEGASE doivent correspondre aux noms des groupes du fichier Keepass2
-# sinon, il est possible de spécifier les mots de passe directement dans les clés accounts
+# Les noms des instances *doivent* correspondre aux noms des groupes du fichier
+# Keepass2, c'est la raison pour laquelle les noms des instances sont en majuscule
+# L'utilisation du fichier Keepass2 n'est pas obligatoire: il est possible de
+# spécifier les mots de passe directement dans les clés accounts
 instances:
   Prod:
     accounts:

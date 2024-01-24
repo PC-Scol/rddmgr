@@ -46,7 +46,7 @@ i=1
 for wksdir in "${wksdirs[@]}"; do
     [ "$wksdir" == default.wks -a -L default.wks ] && continue
 
-    eval "$(dump-config.py "" "" "$wksdir/.env" --postgres)"
+    eval "$(env_dump-config.py "" "" "$wksdir/.env" --postgres)"
     wksname="${wksdir%.wks}"
     data_start "$i"
     data_str Name "$wksdir"

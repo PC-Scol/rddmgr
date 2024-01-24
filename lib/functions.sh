@@ -1033,7 +1033,7 @@ function ensure_user_env() {
     [ -n "$Envname" ] && Envname="${Envname%.env}.env"
     if [ -n "$ForceCreate" -o -z "$Envname" -o ! -f "$WKSDIR/envs/$Envname" ]; then
         einfo "Il faut créer un nouvel environnement"
-        eval "$(dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
+        eval "$(env_dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
 
         [ -n "$instance" ] || instance="${instances[0]}"
         simple_menu instance instances -t "Choix de l'instance PEGASE" -m "Veuillez choisir l'instance attaquée pour les injections"
@@ -1106,7 +1106,7 @@ function run_rddtools() {
 
     system_env="$WKSDIR/envs/.$Envname"
     if should_update "$system_env" "$pegase_yml" "$sources_yml" "$WKSDIR/.env"; then
-        dump-config.py \
+        env_dump-config.py \
             -s "$instance" \
             -d "$source" -p "$source_profile" \
             "$pegase_yml" "$sources_yml" "$WKSDIR/.env" >"$system_env"

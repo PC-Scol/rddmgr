@@ -14,7 +14,7 @@ def split_proxy(url):
 
 parser = argparse.ArgumentParser(
     usage="%(prog)s -s INSTANCE -d apogee|scolarix|sve|non -p PROFILE pegase.yml sources.yml [.env]",
-    description="Extraire les données de pegase.yml de sources.yml",
+    description="Extraire les données de pegase.yml, sources.yml et wksdir/.env",
 )
 parser.add_argument("pegase", nargs="?", metavar="pegase.yml", help="Fichier de configuration des instances PEGASE")
 parser.add_argument("sources", nargs="?", metavar="sources.yml", help="Fichier contenant les définitions des sources de données")
