@@ -1039,7 +1039,7 @@ function list_envs() {
             fi
         done
     else
-        ewarn "Il n'y a pas d'environnement pour le moment. Utilisez l'option -e pour en créer un"
+        ewarn "Il n'y a pas d'environnement pour le moment. Utilisez l'option -c pour en créer un"
     fi
 }
 
@@ -1060,25 +1060,53 @@ function ensure_system_ymls() {
     fi
 }
 
+function _eval_env() {
+    eval "$(cat "$WKSDIR/envs/$1" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
+}
+function _set_previous_env() {
+    if [ -L "$WKSDIR/envs/current" -a -f "$WKSDIR/envs/current" ]; then
+        previous="$(readlink "$WKSDIR/envs/current")"
+        _eval_env current
+    fi
+}
+function _verifix_env() {
+    [ -n "$Envname" ] && Envname="${Envname%.env}.env"
+}
 function ensure_user_env() {
     mkdir -p "$WKSDIR/envs"
 
-    local previous
-    if [ -L "$WKSDIR/envs/current" -a -f "$WKSDIR/envs/current" ]; then
-        previous="$(readlink "$WKSDIR/envs/current")"
-        eval "$(cat "$WKSDIR/envs/current" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
-    fi
+    local previous; _set_previous_env
     if [ -z "$ForceCreate" ]; then
+        local -a envnames
         [ -n "$Envname" ] || Envname="$previous"
         if [ -z "$Envname" ]; then
-            local -a envnames
+            # prendre le premier environnement
             setx -a envnames=ls_files "$WKSDIR/envs" "*.env"
             [ ${#envnames[*]} -gt 0 ] && Envname="${envnames[0]}"
+        elif [ ! -f "$WKSDIR/envs/$Envname" ]; then
+            # essayer quelques corrections standard
+            if [ -f "$WKSDIR/envs/$Envname.env" ]; then
+                # nom d'environnement sans extension
+                Envname="$Envname.env"
+            elif [[ "$Envname" != *_* ]]; then
+                # nom sans préfixe: essayer de trouver un environnement avec un
+                # préfixe quelconque, mais ne le sélectionner que s'il y a
+                # unique correspondance
+                _verifix_env
+                setx -a envnames=ls_files "$WKSDIR/envs" "*_$Envname"
+                if [ ${#envnames[*]} -eq 1 ]; then
+                    Envname="${envnames[0]}"
+                elif [ ${#envnames[*]} -gt 1 ]; then
+                    die "Plusieurs environnements *_$Envname ont été trouvés:
+    $(echo "${envnames[*]}")
+Soyez plus spécifique dans votre sélection"
+                fi
+            fi
         fi
         [ -n "$Envname" ] || ewarn "Aucun environnement n'est défini ou sélectionné"
     fi
 
-    [ -n "$Envname" ] && Envname="${Envname%.env}.env"
+    _verifix_env
     if [ -n "$ForceCreate" -o -z "$Envname" -o ! -f "$WKSDIR/envs/$Envname" ]; then
         einfo "Il faut créer un nouvel environnement"
         eval "$(env_dump-config.py "$pegase_yml" "$sources_yml" -l --local-vars)"
@@ -1104,7 +1132,7 @@ function ensure_user_env() {
             enote "Le nom de l'environnement sera $Envname"
         elif [[ "$Envname" != *_* ]]; then
             Envname="${instance,,}_${Envname}"
-            enote "Le nom a été changé en $Envname sur la base de l'instance PEGASE"
+            enote "Le nom de l'environnement a été changé en $Envname sur la base de l'instance PEGASE"
         fi
         ask_yesno "Voulez-vous créer le nouvel environnement $Envname?" O || die
 
@@ -1132,7 +1160,65 @@ _rddtools_source_profile=$source_profile
     eval "$(cat "$user_env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
 }
 
+function create_env() {
+    local ForceCreate=1
+    [ -z "$Envname" -a $# -gt 0 ] && Envname="$1"
+
+    local pegase_yml sources_yml
+    ensure_system_ymls
+
+    local mypegase_env system_env user_env instance source source_profile
+    ensure_user_env
+}
+
+function duplicate_env() {
+    [ -z "$Envname" -a $# -gt 0 ] && Envname="$1"
+    [ -n "$Envname" ] || die "Vous devez spécifier l'environnement à dupliquer"
+    _verifix_env
+
+    local Source="$Envname"
+    local src_env="$WKSDIR/envs/$Source"
+    [ -f "$src_env" ] || die "$Source: environnement invalide"
+    _eval_env "$Source"
+
+    [ $# -gt 1 ] && Envname="$2" || Envname=
+    _verifix_env
+    if [ -z "$Envname" ]; then
+        Envname="${instance,,}.env"
+        [ "$Envname" != "$Source" ] || die "$Source: impossible de dupliquer un environnement sur lui-même"
+        enote "Le nom du nouvel environnement sera $Envname"
+    elif [[ "$Envname" != *_* ]]; then
+        Envname="${instance,,}_${Envname}"
+        [ "$Envname" != "$Source" ] || die "$Source: impossible de dupliquer un environnement sur lui-même"
+        enote "Le nom du nouvel environnement a été changé en $Envname sur la base de l'instance PEGASE"
+    fi
+    dest_env="$WKSDIR/envs/$Envname"
+    [ -f "$dest_env" ] && die "$Envname: cet environnement existe déjà"
+
+    ask_yesno "Voulez-vous dupliquer $Source vers $Envname?" O || die
+
+    cp "$src_env" "$dest_env" || die
+    if [ -f "$WKSDIR/envs/.$Source" ]; then
+        cp "$WKSDIR/envs/.$Source" "$WKSDIR/envs/.$Envname" || die
+    fi
+    enote "Copie de $Source vers $Envname effectuée avec succès"
+}
+
+function delete_env() {
+    [ -z "$Envname" -a $# -gt 0 ] && Envname="$1"
+    [ -n "$Envname" ] || die "Vous devez spécifier l'environnement à supprimer"
+
+    local previous; _set_previous_env
+    _verifix_env
+
+    [ -f "$WKSDIR/envs/$Envname" ] && enote "Suppression de l'environnement $Envname"
+    rm -f "$WKSDIR/envs/$Envname" "$WKSDIR/envs/.$Envname"
+    [ "$previous" == "$Envname" ] && rm -f "$WKSDIR/envs/current"
+}
+
 function edit_env() {
+    [ -z "$Envname" -a $# -gt 0 ] && Envname="$1"
+
     local pegase_yml sources_yml
     ensure_system_ymls
 
