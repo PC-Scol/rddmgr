@@ -1363,13 +1363,12 @@ function download_shared() {
     # télécharger un fichier avec curl
     in_path curl || "le téléchargement de fichiers requière curl"
 
-    local file="$1" dest="$2" work="$dest.dl$$"
-    local dir="$(dirname "$file")"
+    local file="$1" dest="$2" destname="$(basename -- "$2")"
+    local work="$RDDMGR/.$destname.tmpdl"
     local url="$SHARED_URL/files/?p=${file//\//%2F}&dl=1"
-    local referer="$SHARED_URL/?p=${dir//\//%2F}&mode=list"
 
     estep "Téléchargement de $file --> $(dirname "$dest")/"
-    curl -fsSL -e "$referer" "$url" -o "$work" || return 1
+    curl -f#L -C - --retry 10 "$url" -o "$work" || return 1
 
     if cat "$work" | head -n5 | grep -q '<!DOCTYPE html'; then
         # fichier pourri
