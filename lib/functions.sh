@@ -145,7 +145,7 @@ function check_system() {
 }
 
 function list_workshops() {
-    local -a wksdirs; local wksdir default
+    local -a wksdirs; local wksdir default composefile status
     setx -a wksdirs=ls_dirs "$RDDMGR" "*.wks"
     if [ ${#wksdirs[*]} -gt 0 ]; then
         if [ -d "$RDDMGR/default.wks" -a -L "$RDDMGR/default.wks" ]; then
@@ -155,12 +155,19 @@ function list_workshops() {
         fi
         esection "Liste des ateliers"
         for wksdir in "${wksdirs[@]}"; do
-            if [ "$wksdir" == default.wks -a -L "$RDDMGR/$wksdir" ]; then
-                continue
-            elif [ "$wksdir" == "$default" ]; then
-                estep "$wksdir (atelier par défaut)"
+            [ "$wksdir" == default.wks -a -L "$RDDMGR/$wksdir" ] && continue
+            composefile="$RDDMGR/$wksdir/rddtools.docker-compose.yml"
+            if [ ! -f "$composefile" ]; then
+                status=" -- ${COULEUR_ROUGE}non initialisé${COULEUR_NORMALE}"
+            elif dcrunning "$composefile"; then
+                status=" -- base pivot ${COULEUR_VERTE}démarrée${COULEUR_NORMALE}"
             else
-                estep "$wksdir"
+                status=" -- base pivot arrêtée"
+            fi
+            if [ "$wksdir" == "$default" ]; then
+                estep "$wksdir (atelier par défaut)$status"
+            else
+                estep "$wksdir$status"
             fi
         done
     else
