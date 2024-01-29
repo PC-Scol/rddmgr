@@ -1,6 +1,7 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
 
+SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
 FICHIERS_INIT_TRANSCO=fichiers-init-transco
 SCRIPTS_EXTERNES=scripts-externes
@@ -144,7 +145,7 @@ function check_system() {
 }
 
 function list_workshops() {
-    local -a wksdirs; local wksdir default
+    local -a wksdirs; local wksdir default composefile status
     setx -a wksdirs=ls_dirs "$RDDMGR" "*.wks"
     if [ ${#wksdirs[*]} -gt 0 ]; then
         if [ -d "$RDDMGR/default.wks" -a -L "$RDDMGR/default.wks" ]; then
@@ -154,12 +155,19 @@ function list_workshops() {
         fi
         esection "Liste des ateliers"
         for wksdir in "${wksdirs[@]}"; do
-            if [ "$wksdir" == default.wks -a -L "$RDDMGR/$wksdir" ]; then
-                continue
-            elif [ "$wksdir" == "$default" ]; then
-                estep "$wksdir (atelier par défaut)"
+            [ "$wksdir" == default.wks -a -L "$RDDMGR/$wksdir" ] && continue
+            composefile="$RDDMGR/$wksdir/rddtools.docker-compose.yml"
+            if [ ! -f "$composefile" ]; then
+                status=" -- ${COULEUR_ROUGE}non initialisé${COULEUR_NORMALE}"
+            elif dcrunning "$composefile"; then
+                status=" -- base pivot ${COULEUR_VERTE}démarrée${COULEUR_NORMALE}"
             else
-                estep "$wksdir"
+                status=" -- base pivot arrêtée"
+            fi
+            if [ "$wksdir" == "$default" ]; then
+                estep "$wksdir (atelier par défaut)$status"
+            else
+                estep "$wksdir$status"
             fi
         done
     else
@@ -174,7 +182,7 @@ function create_workshop() {
     local version vxx devxx dvrddtools dvmypegase dvpivotbdd
     local wksdir source_wksdir shareddir rddtools mypegase pivotbdd scriptx source initsrc initph
     for arg in "$@"; do
-        if [ -d "$arg" ]; then
+        if [ -d "$arg" -a ! -f "$arg/.uninitialized_wks" ]; then
             # répertoires
             setx argname=basename "$arg"
             if [[ "$argname" == *.wks ]]; then
@@ -293,7 +301,7 @@ function create_workshop() {
                 source="$arg"
                 ;;
             *)
-                if [ -d "$RDDMGR/$arg" ]; then
+                if [ -d "$RDDMGR/$arg" -a ! -f "$RDDMGR/$arg/.uninitialized_wks" ]; then
                     if [ -z "$wksdir" -a -z "$version" ]; then
                         wksdir="$arg"
                     elif [ -z "$source_wksdir" ]; then
@@ -303,7 +311,7 @@ function create_workshop() {
                     else
                         die "$arg: il ne faut spécifier que deux ateliers maximum: celui à créer et la source"
                     fi
-                elif [ -d "$RDDMGR/$arg.wks" ]; then
+                elif [ -d "$RDDMGR/$arg.wks" -a ! -f "$RDDMGR/$arg.wks/.uninitialized_wks" ]; then
                     arg="$arg.wks"
                     if [ -z "$wksdir" -a -z "$version" ]; then
                         wksdir="$arg"
@@ -624,7 +632,9 @@ function create_workshop() {
     stop_pivotbdd
 
     estep "Copie du répertoire${Recreate:+ avec écrasement}"
+    local uninit; [ -d "$WKSDIR" ] || uninit=1
     rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
+    [ -n "$uninit" ] && touch "$WKSDIR/.uninitialized_wks"
 
     scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
     fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
@@ -821,6 +831,12 @@ function create_workshop() {
     PIVOTBDD_VERSION="$pivotbdd_version"
     merge_vars "$WKSDIR"
 
+    # enlever le marqueur de non initialisation
+    # ce marqueur permet de considérer le répertoire comme non existant tant
+    # qu'il n'est pas complètement initialisé. sinon le calcul des versions de
+    # dev est faussé.
+    rm -f "$WKSDIR/.uninitialized_wks"
+
     if [ -n "$source_wksdir" -a -d "$RDDMGR/$source_wksdir/envs" ]; then
         estep "Copie des environnements depuis $source_wksdir"
         cp -a "$RDDMGR/$source_wksdir/envs" "$WKSDIR"
@@ -1002,6 +1018,7 @@ function restart_services() {
 
 function start_pivotbdd() {
     local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    [ -f "$composefile" ] || die "$composefile: fichier introuvable"
     if dcrunning "$composefile"; then
         enote "la base pivot est démarrée"
     else
@@ -1012,6 +1029,7 @@ function start_pivotbdd() {
 
 function stop_pivotbdd() {
     local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    [ -f "$composefile" ] || return 0
     if dcrunning "$composefile"; then
         estep "Arrêt de le base pivot"
         docker compose -f "$composefile" down || die
@@ -1368,7 +1386,23 @@ function download_shared() {
     local url="$SHARED_URL/files/?p=${file//\//%2F}&dl=1"
 
     estep "Téléchargement de $file --> $(dirname "$dest")/"
-    curl -f#L -C - --retry 10 "$url" -o "$work" || return 1
+    local r done maxtries=10
+    while [ -z "$done" ]; do
+        curl -f#L -C - --retry 10 "$url" -o "$work"; r=$?
+        if [ $r -eq 18 ]; then
+            let maxtries=maxtries-1
+            if [ $maxtries -eq 0 ]; then
+                eerror "Abandon du téléchargement"
+                return 1
+            else
+                estep "Nouvelle tentative..."
+            fi
+        elif [ $r -ne 0 ]; then
+            return 1
+        else
+            done=1
+        fi
+    done
 
     if cat "$work" | head -n5 | grep -q '<!DOCTYPE html'; then
         # fichier pourri
