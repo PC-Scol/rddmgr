@@ -1,3 +1,14 @@
+## Version 0.4.1 du 30/01/2024-00:26
+
+* `068f746` Intégration de la branche wip/misc
+  * `62b1651` provision contre l'initialisation incomplète d'un atelier
+  * `6659780` curl: max 10 tentatives en cas d'erreur 18
+  * `2a6c541` curl: tenter de continuer le téléchargement en cas de code erreur 18
+  * `b68e447` afficher le statut de la base pivot dans la liste des ateliers
+  * `d27260e` corriger l'affichage de SHARED_URL
+  * `26a654b` stop_pivotbdd uniquement si le fichier existe
+* `0640967` curl: retry, continue, progress bar
+
 ## Version 0.4.0 du 24/01/2024-23:53
 
 * `19e8f05` Intégration de la branche wip/misc
