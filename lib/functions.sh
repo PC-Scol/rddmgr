@@ -182,7 +182,7 @@ function create_workshop() {
     local version vxx devxx dvrddtools dvmypegase dvpivotbdd
     local wksdir source_wksdir shareddir rddtools mypegase pivotbdd scriptx source initsrc initph
     for arg in "$@"; do
-        if [ -d "$arg" ]; then
+        if [ -d "$arg" -a ! -f "$arg/.uninitialized_wks" ]; then
             # répertoires
             setx argname=basename "$arg"
             if [[ "$argname" == *.wks ]]; then
@@ -301,7 +301,7 @@ function create_workshop() {
                 source="$arg"
                 ;;
             *)
-                if [ -d "$RDDMGR/$arg" ]; then
+                if [ -d "$RDDMGR/$arg" -a ! -f "$RDDMGR/$arg/.uninitialized_wks" ]; then
                     if [ -z "$wksdir" -a -z "$version" ]; then
                         wksdir="$arg"
                     elif [ -z "$source_wksdir" ]; then
@@ -311,7 +311,7 @@ function create_workshop() {
                     else
                         die "$arg: il ne faut spécifier que deux ateliers maximum: celui à créer et la source"
                     fi
-                elif [ -d "$RDDMGR/$arg.wks" ]; then
+                elif [ -d "$RDDMGR/$arg.wks" -a ! -f "$RDDMGR/$arg.wks/.uninitialized_wks" ]; then
                     arg="$arg.wks"
                     if [ -z "$wksdir" -a -z "$version" ]; then
                         wksdir="$arg"
@@ -632,7 +632,9 @@ function create_workshop() {
     stop_pivotbdd
 
     estep "Copie du répertoire${Recreate:+ avec écrasement}"
+    local uninit; [ -d "$WKSDIR" ] || uninit=1
     rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
+    [ -n "$uninit" ] && touch "$WKSDIR/.uninitialized_wks"
 
     scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
     fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
@@ -828,6 +830,12 @@ function create_workshop() {
     MYPEGASE_VERSION="$mypegase_version"
     PIVOTBDD_VERSION="$pivotbdd_version"
     merge_vars "$WKSDIR"
+
+    # enlever le marqueur de non initialisation
+    # ce marqueur permet de considérer le répertoire comme non existant tant
+    # qu'il n'est pas complètement initialisé. sinon le calcul des versions de
+    # dev est faussé.
+    rm -f "$WKSDIR/.uninitialized_wks"
 
     if [ -n "$source_wksdir" -a -d "$RDDMGR/$source_wksdir/envs" ]; then
         estep "Copie des environnements depuis $source_wksdir"
