@@ -1378,7 +1378,17 @@ function download_shared() {
     local url="$SHARED_URL/files/?p=${file//\//%2F}&dl=1"
 
     estep "Téléchargement de $file --> $(dirname "$dest")/"
-    curl -f#L -C - --retry 10 "$url" -o "$work" || return 1
+    local r done
+    while [ -z "$done" ]; do
+        curl -f#L -C - --retry 10 "$url" -o "$work"; r=$?
+        if [ $r -eq 18 ]; then
+            estep "Nouvelle tentative..."
+        elif [ $r -ne 0 ]; then
+            return 1
+        else
+            done=1
+        fi
+    done
 
     if cat "$work" | head -n5 | grep -q '<!DOCTYPE html'; then
         # fichier pourri
