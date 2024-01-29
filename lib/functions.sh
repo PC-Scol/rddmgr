@@ -1,6 +1,7 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
 
+SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
 FICHIERS_INIT_TRANSCO=fichiers-init-transco
 SCRIPTS_EXTERNES=scripts-externes
