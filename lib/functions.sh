@@ -1002,6 +1002,7 @@ function restart_services() {
 
 function start_pivotbdd() {
     local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    [ -f "$composefile" ] || die "$composefile: fichier introuvable"
     if dcrunning "$composefile"; then
         enote "la base pivot est démarrée"
     else
@@ -1012,6 +1013,7 @@ function start_pivotbdd() {
 
 function stop_pivotbdd() {
     local composefile="$WKSDIR/rddtools.docker-compose.yml"
+    [ -f "$composefile" ] || return 0
     if dcrunning "$composefile"; then
         estep "Arrêt de le base pivot"
         docker compose -f "$composefile" down || die
