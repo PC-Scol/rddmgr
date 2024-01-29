@@ -1378,11 +1378,17 @@ function download_shared() {
     local url="$SHARED_URL/files/?p=${file//\//%2F}&dl=1"
 
     estep "Téléchargement de $file --> $(dirname "$dest")/"
-    local r done
+    local r done maxtries=10
     while [ -z "$done" ]; do
         curl -f#L -C - --retry 10 "$url" -o "$work"; r=$?
         if [ $r -eq 18 ]; then
-            estep "Nouvelle tentative..."
+            let maxtries=maxtries-1
+            if [ $maxtries -eq 0 ]; then
+                eerror "Abandon du téléchargement"
+                return 1
+            else
+                estep "Nouvelle tentative..."
+            fi
         elif [ $r -ne 0 ]; then
             return 1
         else
