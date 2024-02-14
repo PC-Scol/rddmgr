@@ -1,3 +1,7 @@
+## Version 0.4.3 du 14/02/2024-10:39
+
+* `1e485ec` maj version pgAdmin
+
 ## Version 0.4.2 du 14/02/2024-07:59
 
 * `529bd95` regen-secrets: initialiser le générateur aléatoire
