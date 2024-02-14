@@ -1,3 +1,7 @@
+## Version 0.4.2 du 14/02/2024-07:59
+
+* `529bd95` regen-secrets: initialiser le générateur aléatoire
+
 ## Version 0.4.1 du 30/01/2024-00:26
 
 * `068f746` Intégration de la branche wip/misc
