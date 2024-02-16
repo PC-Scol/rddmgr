@@ -3,10 +3,10 @@
 
 SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
-FICHIERS_INIT_TRANSCO=fichiers-init-transco
-SCRIPTS_EXTERNES=scripts-externes
 BACKUPS=backups
 : "${EDITOR:=nano}"
+: "${FICHIERS_INIT_TRANSCO:=fichiers-init-transco}"
+: "${SCRIPTS_EXTERNES:=scripts-externes}"
 
 inspath "$RDDMGR/lib/sbin"
 
@@ -565,7 +565,8 @@ function create_workshop() {
         estep "$pivotbddname: ce fichier sera téléchargé"
     fi
 
-    if [ -d "$RDDMGR/$SCRIPTS_EXTERNES" ]; then
+    setx scripts_externes=abspath "$SCRIPTS_EXTERNES" "$RDDMGR"
+    if [ -d "$scripts_externes" ]; then
         enote "$SCRIPTS_EXTERNES: le répertoire est présent"
         [ -n "$scriptx" ] && ewarn "$scriptx: ce fichier sera ignoré, le répertoire est déjà présent"
     else
@@ -584,7 +585,8 @@ function create_workshop() {
         fi
     fi
 
-    if [ -d "$RDDMGR/$FICHIERS_INIT_TRANSCO" ]; then
+    setx fichiers_init_transco=abspath "$FICHIERS_INIT_TRANSCO" "$RDDMGR"
+    if [ -d "$fichiers_init_transco" ]; then
         enote "$FICHIERS_INIT_TRANSCO: le répertoire est présent"
         [ -n "$initsrc" ] && ewarn "$initsrc: ce fichier sera ignoré, le répertoire est déjà présent"
         [ -n "$initph" ] && ewarn "$initph: ce fichier sera ignoré, le répertoire est déjà présent"
@@ -636,8 +638,6 @@ function create_workshop() {
     rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
     [ -n "$uninit" ] && touch "$WKSDIR/.uninitialized_wks"
 
-    scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
-    fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
     backupsdir="$RDDMGR/$BACKUPS"
     mkdir -p "$backupsdir" || die
     chmod 775 "$backupsdir"
@@ -1271,10 +1271,11 @@ function run_rddtools() {
     run+=(--env-file "$mypegase_env" --env-file "$system_env" --env-file "$user_env")
     [ -n "$Debug" ] && run+=(-e debug_job=O)
     # points de montage
-    local filesdir="$RDDMGR/$FICHIERS_INIT_TRANSCO"
-    local scriptxsdir="$RDDMGR/$SCRIPTS_EXTERNES"
-    local backupsdir="$RDDMGR/$BACKUPS"
-    local logsdir="$WKSDIR/logs/$(date +%Y%m%dT%H%M%S)"
+    local filesdir scriptxsdir backupsdir logsdir
+    setx filesdir=abspath "$FICHIERS_INIT_TRANSCO" "$RDDMGR"
+    setx scriptxsdir=abspath "$SCRIPTS_EXTERNES" "$RDDMGR"
+    backupsdir="$RDDMGR/$BACKUPS"
+    logsdir="$WKSDIR/logs/$(date +%Y%m%dT%H%M%S)"
 
     run+=(-v "$RDDMGR/config/lib-ext:/lib-ext:ro")
     run+=(-v "$filesdir:/files")
