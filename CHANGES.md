@@ -1,3 +1,12 @@
+## Version 0.5.0 du 16/02/2024-17:28
+
+* `77d74c4` Intégration de la branche wip/misc
+  * `ebd2547` améliorer l'édition du fichier d'environnement
+  * `34b2f36` documenter la nécessité de python 3
+  * `582b9c4` ajout des prérequis dans la documentation
+  * `0aa38f2` vérification des pré-requis
+  * `039c504` FICHIERS_INIT_TRANSCO et SCRIPTS_EXTERNES sont maintenant configurables
+
 ## Version 0.4.3 du 14/02/2024-10:39
 
 * `1e485ec` maj version pgAdmin

@@ -1,12 +1,14 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
 
+PREREQUISITES=(git curl rsync sudo tar unzip python3 gawk docker)
+
 SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
-FICHIERS_INIT_TRANSCO=fichiers-init-transco
-SCRIPTS_EXTERNES=scripts-externes
 BACKUPS=backups
 : "${EDITOR:=nano}"
+: "${FICHIERS_INIT_TRANSCO:=fichiers-init-transco}"
+: "${SCRIPTS_EXTERNES:=scripts-externes}"
 
 inspath "$RDDMGR/lib/sbin"
 
@@ -66,7 +68,25 @@ Le cas échéant, modifiez la configuration avant de relancer ce script:
 }
 
 function init_system() {
-    esection "Initialisation de l'environnement docker"
+    esection "Initialisation de l'environnement"
+
+    if [ -n "$InitChecks" ]; then
+        estep "Vérification des programmes requis"
+        local -a progs
+        for prog in "${PREREQUISITES[@]}"; do
+            in_path "$prog" || progs+=("$prog")
+        done
+        [ ${#progs[*]} -gt 0 ] && die "\
+Les programmes requis suivants sont introuvables:
+    ${progs[*]}
+Veuillez les installer puis vous pourrez relancer 'rddmgr --init'"
+
+        if [ "$(id -u)" -ne 0 ]; then
+            # Si on n'est pas root, il faut être sudoer
+            estep "Vérification que vous êtes sudoer"
+            sudo -v 2>/dev/null || die "rddmgr requière que vous soyez sudoer"
+        fi
+    fi
 
     if [ -n "$InitNetworks" ]; then
         # Création des réseaux
@@ -565,7 +585,8 @@ function create_workshop() {
         estep "$pivotbddname: ce fichier sera téléchargé"
     fi
 
-    if [ -d "$RDDMGR/$SCRIPTS_EXTERNES" ]; then
+    setx scripts_externes=abspath "$SCRIPTS_EXTERNES" "$RDDMGR"
+    if [ -d "$scripts_externes" ]; then
         enote "$SCRIPTS_EXTERNES: le répertoire est présent"
         [ -n "$scriptx" ] && ewarn "$scriptx: ce fichier sera ignoré, le répertoire est déjà présent"
     else
@@ -584,7 +605,8 @@ function create_workshop() {
         fi
     fi
 
-    if [ -d "$RDDMGR/$FICHIERS_INIT_TRANSCO" ]; then
+    setx fichiers_init_transco=abspath "$FICHIERS_INIT_TRANSCO" "$RDDMGR"
+    if [ -d "$fichiers_init_transco" ]; then
         enote "$FICHIERS_INIT_TRANSCO: le répertoire est présent"
         [ -n "$initsrc" ] && ewarn "$initsrc: ce fichier sera ignoré, le répertoire est déjà présent"
         [ -n "$initph" ] && ewarn "$initph: ce fichier sera ignoré, le répertoire est déjà présent"
@@ -636,8 +658,6 @@ function create_workshop() {
     rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
     [ -n "$uninit" ] && touch "$WKSDIR/.uninitialized_wks"
 
-    scripts_externes="$RDDMGR/$SCRIPTS_EXTERNES"
-    fichiers_init_transco="$RDDMGR/$FICHIERS_INIT_TRANSCO"
     backupsdir="$RDDMGR/$BACKUPS"
     mkdir -p "$backupsdir" || die
     chmod 775 "$backupsdir"
@@ -1163,11 +1183,14 @@ _rddtools_source=$source
 _rddtools_source_profile=$source_profile
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Ajouter vos paramètres à partir d'ici"
+# Ajoutez vos paramètres utilisateurs à partir d'ici
+"
     fi
 
     user_env="$WKSDIR/envs/$Envname"
     [ -f "$user_env" ] || die "$Envname: environnemnt invalide"
+    system_env="$WKSDIR/envs/.$Envname"
+    mypegase_env="$WKSDIR/init/mypegase_$MYPEGASE_VERSION.env"
 
     # rendre courant l'environnement sélectionné
     if [ "$Envname" != "$previous" ]; then
@@ -1243,7 +1266,17 @@ function edit_env() {
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
 
-    "$EDITOR" "$WKSDIR/envs/$Envname"
+    local tmpfile; ac_set_tmpfile tmpfile
+    if env_mypegase.py --export "$mypegase_env" "$system_env" "$user_env" "$tmpfile"; then
+        "$EDITOR" "$tmpfile"
+        env_mypegase.py --import "$mypegase_env" "$system_env" "$user_env" "$tmpfile"
+    else
+        ewarn "\
+Une erreur s'est produite lors de la création du fichier temporaire.
+Vous devez éditer directement le fichier environnement"
+        "$EDITOR" "$user_env"
+    fi
+    ac_clean "$tmpfile"
 }
 
 function run_rddtools() {
@@ -1253,10 +1286,7 @@ function run_rddtools() {
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
 
-    mypegase_env="$WKSDIR/init/mypegase_$MYPEGASE_VERSION.env"
     [ -f "$mypegase_env" ] || die "Le fichier ${mypegase_env#$WKSDIR/} est requis"
-
-    system_env="$WKSDIR/envs/.$Envname"
     if should_update "$system_env" "$pegase_yml" "$sources_yml" "$WKSDIR/.env"; then
         env_dump-config.py \
             -s "$instance" \
@@ -1271,10 +1301,11 @@ function run_rddtools() {
     run+=(--env-file "$mypegase_env" --env-file "$system_env" --env-file "$user_env")
     [ -n "$Debug" ] && run+=(-e debug_job=O)
     # points de montage
-    local filesdir="$RDDMGR/$FICHIERS_INIT_TRANSCO"
-    local scriptxsdir="$RDDMGR/$SCRIPTS_EXTERNES"
-    local backupsdir="$RDDMGR/$BACKUPS"
-    local logsdir="$WKSDIR/logs/$(date +%Y%m%dT%H%M%S)"
+    local filesdir scriptxsdir backupsdir logsdir
+    setx filesdir=abspath "$FICHIERS_INIT_TRANSCO" "$RDDMGR"
+    setx scriptxsdir=abspath "$SCRIPTS_EXTERNES" "$RDDMGR"
+    backupsdir="$RDDMGR/$BACKUPS"
+    logsdir="$WKSDIR/logs/$(date +%Y%m%dT%H%M%S)"
 
     run+=(-v "$RDDMGR/config/lib-ext:/lib-ext:ro")
     run+=(-v "$filesdir:/files")

@@ -10,6 +10,7 @@ action=
 init=
 Reinit=
 init_auto=1
+InitChecks=
 InitNetworks=
 InitTraefik=
 InitPgadmin=
@@ -23,6 +24,7 @@ args=(
     --no-check check= "++Ne pas vérifier les ateliers avant de lancer une commande"
     -0,--init init=1 "Initialiser l'environnement docker nécessaire aux ateliers"
     --reinit Reinit=1 "++Forcer l'initialisation même si elle a déjà été faite"
+    --init-checks '$init_auto=; InitChecks=1' "++Faire uniquement la vérification des pré-requis"
     --init-networks '$init_auto=; InitNetworks=1' "++Faire uniquement l'initialisation des réseaux"
     --init-traefik '$init_auto=; InitTraefik=1' "++Faire uniquement l'initialisation du frontal"
     --init-pgadmin '$init_auto=; InitPgadmin=1' "++Faire uniquement l'initialisation de pgadmin"
@@ -56,6 +58,7 @@ if [ -n "$init" ]; then
     [ -n "$action" ] || action=none
     [ "$check" == auto ] && check=
     if [ -n "$init_auto" ]; then
+        InitChecks=1
         InitNetworks=1
         InitTraefik=1
         InitPgadmin=1
