@@ -1183,11 +1183,14 @@ _rddtools_source=$source
 _rddtools_source_profile=$source_profile
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Ajouter vos paramètres à partir d'ici"
+# Ajoutez vos paramètres utilisateurs à partir d'ici
+"
     fi
 
     user_env="$WKSDIR/envs/$Envname"
     [ -f "$user_env" ] || die "$Envname: environnemnt invalide"
+    system_env="$WKSDIR/envs/.$Envname"
+    mypegase_env="$WKSDIR/init/mypegase_$MYPEGASE_VERSION.env"
 
     # rendre courant l'environnement sélectionné
     if [ "$Envname" != "$previous" ]; then
@@ -1263,7 +1266,17 @@ function edit_env() {
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
 
-    "$EDITOR" "$WKSDIR/envs/$Envname"
+    local tmpfile; ac_set_tmpfile tmpfile
+    if env_mypegase.py --export "$mypegase_env" "$system_env" "$user_env" "$tmpfile"; then
+        "$EDITOR" "$tmpfile"
+        env_mypegase.py --import "$mypegase_env" "$system_env" "$user_env" "$tmpfile"
+    else
+        ewarn "\
+Une erreur s'est produite lors de la création du fichier temporaire.
+Vous devez éditer directement le fichier environnement"
+        "$EDITOR" "$user_env"
+    fi
+    ac_clean "$tmpfile"
 }
 
 function run_rddtools() {
@@ -1273,10 +1286,7 @@ function run_rddtools() {
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
 
-    mypegase_env="$WKSDIR/init/mypegase_$MYPEGASE_VERSION.env"
     [ -f "$mypegase_env" ] || die "Le fichier ${mypegase_env#$WKSDIR/} est requis"
-
-    system_env="$WKSDIR/envs/.$Envname"
     if should_update "$system_env" "$pegase_yml" "$sources_yml" "$WKSDIR/.env"; then
         env_dump-config.py \
             -s "$instance" \
