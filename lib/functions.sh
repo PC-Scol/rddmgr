@@ -1,6 +1,8 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
 
+PREREQUISITES=(git gawk curl docker rsync sudo tar unzip)
+
 SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
 BACKUPS=backups
@@ -66,7 +68,25 @@ Le cas échéant, modifiez la configuration avant de relancer ce script:
 }
 
 function init_system() {
-    esection "Initialisation de l'environnement docker"
+    esection "Initialisation de l'environnement"
+
+    if [ -n "$InitChecks" ]; then
+        estep "Vérification des programmes requis"
+        local -a progs
+        for prog in "${PREREQUISITES[@]}"; do
+            in_path "$prog" || progs+=("$prog")
+        done
+        [ ${#progs[*]} -gt 0 ] && die "\
+Les programmes requis suivants sont introuvables:
+    ${progs[*]}
+Veuillez les installer puis vous pourrez relancer 'rddmgr --init'"
+
+        if [ "$(id -u)" -ne 0 ]; then
+            # Si on n'est pas root, il faut être sudoer
+            estep "Vérification que vous êtes sudoer"
+            sudo -v 2>/dev/null || die "rddmgr requière que vous soyez sudoer"
+        fi
+    fi
 
     if [ -n "$InitNetworks" ]; then
         # Création des réseaux
