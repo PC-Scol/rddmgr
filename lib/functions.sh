@@ -1,7 +1,7 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
 
-PREREQUISITES=(git gawk curl docker rsync sudo tar unzip)
+PREREQUISITES=(git gawk curl rsync sudo tar unzip docker)
 
 SHARED_URL=https://share.pc-scol.fr/d/614ecc4ab7e845429c08
 RDDTOOLS_IMAGE=docker.pc-scol.fr/pcscol/rdd-tools
