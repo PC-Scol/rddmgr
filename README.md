@@ -10,12 +10,14 @@ n'importe quel système Linux, pourvu que les pré-requis soient respectés.
 Les programmes suivants sont nécessaires:
 * git
 * curl
-* docker
 * rsync
 * sudo
 * tar
 * unzip
-* GNUawk (gawk)
+* Python 3
+* GNU awk (gawk)
+* docker
+  (podman n'a pas été testé, je ne sais pas si ça marche avec)
 
 Les instructions suivantes permettent d'installer ce qui est nécessaire sous Debian 11:
 
@@ -55,7 +57,7 @@ sudo -v
 
 Ensuite, il faut installer les programmes requis
 ~~~sh
-sudo apt update && sudo apt install git gawk curl rsync tar unzip
+sudo apt update && sudo apt install git curl rsync tar unzip python3 gawk
 ~~~
 
 Puis installer docker
