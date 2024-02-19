@@ -124,15 +124,19 @@ elif action == 'import':
                     tmpf.write("%s=%s\n" % (name, row["value"]))
                 read_vars[name] = True
             else:
-                # variable qui est apparu après?! ça ne devrait pas se produire
-                # mais au cas, reporter la ligne sans modification
-                tmpf.write("%s\n" % row["line"])
+                # variable qui n'est plus dans le fichier temporaire. la
+                # supprimer
+                pass
         # ensuite, écrire toutes les nouvelles valeurs
         for (name, value) in input_params.items():
             if name in read_vars: continue
-            elif input_params[name] != mypegase_params[name]:
-                # n'écrire que si la valeur a changé
-                tmpf.write("%s=%s\n" % (name, input_params[name]))
+            if name in mypegase_params:
+                if input_params[name] != mypegase_params[name]:
+                    # n'écrire que si la valeur a changé
+                    tmpf.write("%s=%s\n" % (name, input_params[name]))
+            else:
+                # écrire la valeur telle quelle
+                tmpf.write("%s=%s\n" % (name, value))
         # enfin, écraser le fichier original
         tmpf.seek(0)
         with open(args.user[0], "wt", encoding="utf-8") as outf:
