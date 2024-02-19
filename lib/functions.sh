@@ -9,6 +9,8 @@ BACKUPS=backups
 : "${EDITOR:=nano}"
 : "${FICHIERS_INIT_TRANSCO:=fichiers-init-transco}"
 : "${SCRIPTS_EXTERNES:=scripts-externes}"
+LASTREL=release-courante.wks
+LASTDEV=devimage-courante.wks
 
 inspath "$RDDMGR/lib/sbin"
 
@@ -165,17 +167,21 @@ function check_system() {
 }
 
 function list_workshops() {
-    local -a wksdirs; local wksdir default composefile status
+    local -a wksdirs; local wksdir lastrel lastdev composefile status
     setx -a wksdirs=ls_dirs "$RDDMGR" "*.wks"
     if [ ${#wksdirs[*]} -gt 0 ]; then
-        if [ -d "$RDDMGR/default.wks" -a -L "$RDDMGR/default.wks" ]; then
-            setx default=readlink "$RDDMGR/default.wks"
-        else
-            default="${wksdirs[0]}"
+        if [ -d "$RDDMGR/$LASTREL" -a -L "$RDDMGR/$LASTREL" ]; then
+            setx lastrel=readlink "$RDDMGR/$LASTREL"
         fi
+        if [ -d "$RDDMGR/$LASTDEV" -a -L "$RDDMGR/$LASTDEV" ]; then
+            setx lastdev=readlink "$RDDMGR/$LASTDEV"
+        fi
+
         esection "Liste des ateliers"
         for wksdir in "${wksdirs[@]}"; do
-            [ "$wksdir" == default.wks -a -L "$RDDMGR/$wksdir" ] && continue
+            [ "$wksdir" == "$LASTREL" -a -L "$RDDMGR/$wksdir" ] && continue
+            [ "$wksdir" == "$LASTDEV" -a -L "$RDDMGR/$wksdir" ] && continue
+
             composefile="$RDDMGR/$wksdir/rddtools.docker-compose.yml"
             if [ ! -f "$composefile" ]; then
                 status=" -- ${COULEUR_ROUGE}non initialisé${COULEUR_NORMALE}"
@@ -184,11 +190,14 @@ function list_workshops() {
             else
                 status=" -- base pivot arrêtée"
             fi
-            if [ "$wksdir" == "$default" ]; then
-                estep "$wksdir (atelier par défaut)$status"
-            else
-                estep "$wksdir$status"
+            if [ -n "$lastdev" ]; then
+                if [ "$wksdir" == "$lastrel" ]; then status="$status (dernière release)"
+                elif [ "$wksdir" == "$lastdev" ]; then status="$status (dernière image de dev, atelier par défaut)"
+                fi
+            elif [ "$wksdir" == "$lastrel" ]; then
+                status="$status (dernière release, atelier par défaut)"
             fi
+            estep "$wksdir$status"
         done
     else
         echo_no_workshops
@@ -862,11 +871,12 @@ function create_workshop() {
         cp -a "$RDDMGR/$source_wksdir/envs" "$WKSDIR"
     fi
 
+    enote "Autosélection de $wksdir comme atelier par défaut"
     if [ -z "$devxx" ]; then
-        # Pour une version majeure, toujours sélectionner comme atelier par
-        # défaut
-        enote "Autosélection de $wksdir comme atelier par défaut"
-        ln -sfT "$wksdir" "$RDDMGR/default.wks"
+        ln -sfT "$wksdir" "$RDDMGR/$LASTREL"
+        [ -L "$RDDMGR/$LASTDEV" ] && rm -f "$RDDMGR/$LASTDEV"
+    else
+        ln -sfT "$wksdir" "$RDDMGR/$LASTDEV"
     fi
 
     #estep "Démarrage de la base pivot"
@@ -905,18 +915,16 @@ function delete_workshop() {
 }
 
 function set_default_workshop() {
-    local default; local -a wksdirs
-    if [ -d "$RDDMGR/default.wks" -a -L "$RDDMGR/default.wks" ]; then
-        setx default=readlink "$RDDMGR/default.wks"
+    local default lastrel lastdev; local -a wksdirs
+    if [ -d "$RDDMGR/$LASTDEV" -a -L "$RDDMGR/$LASTDEV" ]; then
+        setx lastdev=readlink "$RDDMGR/$LASTDEV"
+        upvar default "$lastdev"
+    elif [ -d "$RDDMGR/$LASTREL" -a -L "$RDDMGR/$LASTREL" ]; then
+        setx lastrel=readlink "$RDDMGR/$LASTREL"
+        upvar default "$lastrel"
     else
-        setx -a wksdirs=ls_dirs "$RDDMGR" "*.wks"
-        default="${wksdirs[0]}"
-        if [ -n "$default" ]; then
-            enote "Autosélection de $default comme atelier par défaut"
-            ln -s "$default" "$RDDMGR/default.wks"
-        fi
+        upvar default ""
     fi
-    upvar default "$default"
 }
 
 function _set_services() {
@@ -932,7 +940,7 @@ function _set_services() {
         case "$service" in
         traefik|traefik.service) traefik=1;;
         pgadmin|pgadmin.service) pgadmin=1;;
-        default|default.wks) default=1;;
+        default|$LASTREL|$LASTDEV) default=1;;
         *)
             service="${service%.wks}.wks"
             [ -d "$RDDMGR/$service" ] || die "$service: service invalide"

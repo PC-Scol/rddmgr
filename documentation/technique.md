@@ -217,7 +217,7 @@ Dans un atelier, le script rddtools permet de lancer les commandes pour faire la
 RDD dans l'environnement configuré. Chaque atelier est indépendant des autres,
 et ils peuvent être utilisés en parallèle.
 
-Le script est conçus pour utiliser rdd-tools de la façon la plus transparente
+Le script est conçu pour utiliser rdd-tools de la façon la plus transparente
 possible. Cependant, il a certaines options spécifique. Il est possible
 d'afficher ces options spécifiques avec l'option --help
 ~~~sh
@@ -239,7 +239,7 @@ environnement nommé "myenv":
   pour être consulté et modifié par l'utilisateur.
 
   ce fichier contient notamment le nom de l'instance PEGASE attaquée (Prod,
-  Test, Rdd, etc.) ainsi que le profil de connexion à la source de données
+  Test, RDD, etc.) ainsi que le profil de connexion à la source de données
 * le fichier `envs/.myenv.env` contient les paramètres de connexion à l'instance
   PEGASE, à la base pivot, et à la source de données. ce fichier est généré
   automatiquement, et n'est pas censé être modifié par l'utilisateur.

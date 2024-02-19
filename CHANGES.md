@@ -1,3 +1,9 @@
+## Version 0.5.1 du 19/02/2024-15:48
+
+* `176089b` correction de l'édition des paramètres
+* `23d4e40` identifier dernière release et dernière image de dev
+* `5205c38` maj doc
+
 ## Version 0.5.0 du 16/02/2024-17:28
 
 * `77d74c4` Intégration de la branche wip/misc
