@@ -4,7 +4,8 @@
 /fichiers-init-transco/
 /scripts-externes/
 /backups/
-/default.wks
+/release-courante.wks
+/devimage-courante.wks
 /*.wks/
 
 /.composer.lock
