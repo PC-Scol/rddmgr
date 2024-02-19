@@ -46,7 +46,7 @@ chmod 440 /etc/sudoers.d/$user
 exit
 ~~~
 
-Après ces opérations, ou si l'utiliateur était déjà sudoer, 'sudo -v' demande
+Après ces opérations, ou si l'utilisateur était déjà sudoer, 'sudo -v' demande
 son mot de passe à l'utilisateur
 ~~~sh
 sudo -v
