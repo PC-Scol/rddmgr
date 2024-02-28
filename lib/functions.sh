@@ -368,6 +368,18 @@ function create_workshop() {
         fi
     done
 
+    # si $LASTDEV ou $LASTREL existent, les prendre comme source par défaut
+    if [ -z "$source_wksdir" ]; then
+        if [ -d "$RDDMGR/$LASTDEV" ]; then
+            enote "Sélection automatique de $(readlink "$RDDMGR/$LASTDEV") comme atelier source"
+            source_wksdir="$LASTDEV"
+        elif [ -d "$RDDMGR/$LASTREL" ]; then
+            enote "Sélection automatique de $(readlink "$RDDMGR/$LASTREL") comme atelier source"
+            source_wksdir="$LASTREL"
+        fi
+    fi
+    [ "$source_wksdir" == none ] && source_wksdir=
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## calcul de la version
 
@@ -406,7 +418,7 @@ function create_workshop() {
         else
             die "Vous devez spécifier la version de l'image"
         fi
-        [ -n "$wksdir" ] && enote "Sélection automatique de $wksdir.wks d'après la version $version"
+        [ -n "$wksdir" ] && enote "Sélection automatique de $wksdir.wks comme destination d'après la version $version"
     fi
 
     [ -n "$wksdir" ] || die "vous devez spécifier le nom de l'atelier à créer"
