@@ -1,3 +1,11 @@
+## Version 0.6.0 du 28/02/2024-17:51
+
+* `0d3b59e` Intégration de la branche wip/vn
+  * `8cb5fc7` maj doc
+  * `b276963` sélection automatique de l'atelier courant comme source
+  * `26f5e90` améliorer la découverte de fichiers locaux
+  * `a380d58` support de la convention de nommage mypegase-MMM.env
+
 ## Version 0.5.1 du 19/02/2024-15:48
 
 * `176089b` correction de l'édition des paramètres
