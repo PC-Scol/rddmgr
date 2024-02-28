@@ -32,7 +32,7 @@ args=(
     -c,--create action=create "Créer un nouvel atelier.
 Il faut fournir comme argument supplémentaire une ou plusieurs des informations suivantes:
 - [create=]WKSDIR -- le nom de l'environnement à créer
-- [source=]SOURCE_WKSDIR -- un environnement depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après WKSDIR
+- [source=]SOURCE_WKSDIR -- un atelier depuis lequel copier les fichiers s'ils ne sont pas spécifiés. Doit être mentionné après WKSDIR
 - [shared=]SHARED_DIR -- chemin vers un répertoire contenant les répertoires rdd-tools, rdd-tools-pivot, fichiers_init_et_transcos téléchargés depuis l'espace partagé $SHARED_URL?p=/RDD&mode=list
 - [version=]VERSION -- version des fichiers à considérer. peut être de la forme 23.0.0 ou 0.1.0-dev.824
 - SOURCE -- une valeur parmi apogee, scolarix, sve ou vierge permettant de sélectionner automatiquement le bon fichier d'initialisation et de transcodification dans SHARED_DIR

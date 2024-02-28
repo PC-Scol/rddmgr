@@ -207,8 +207,9 @@ function list_workshops() {
 function create_workshop() {
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## analyse des arguments
+
     local arg argname
-    local version vxx devxx dvrddtools dvmypegase dvpivotbdd
+    local version vxx devxx svrddtools svmypegase svpivotbdd
     local wksdir source_wksdir shareddir rddtools mypegase pivotbdd scriptx source initsrc initph
     for arg in "$@"; do
         if [ -d "$arg" -a ! -f "$arg/.uninitialized_wks" ]; then
@@ -233,29 +234,29 @@ function create_workshop() {
             # fichiers
             setx filename=basename "$arg"
             case "$filename" in
-            rdd-tools_*.tar)
+            rdd-tools[-_]*.tar)
                 [ -n "$rddtools" ] && die "$arg: il ne faut spécifier qu'un seul fichier image"
                 rddtools="$arg"
                 ;;
-            mypegase_*.env)
+            mypegase[-_]*.env)
                 [ -n "$mypegase" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'environnement"
                 mypegase="$arg"
                 ;;
-            rdd-tools-pivot_*.tar.gz)
+            rdd-tools-pivot[-_]*.tar.gz)
                 [ -n "$pivotbdd" ] && die "$arg: il ne faut spécifier qu'une seule définition de base pivot"
                 pivotbdd="$arg"
                 ;;
-            RDD-scripts-externes_*.zip)
+            RDD-scripts-externes[-_]*.zip)
                 [ -n "$scriptx" ] && die "$arg: il ne faut spécifier qu'un seul fichier de scripts externes"
                 scriptx="$arg"
                 ;;
-            RDD-init-transco-apogee_*.zip|RDD-init-transco-scolarix_*.zip|RDD-init-transco-sve_*.zip|RDD-init-transco-vierge_*.zip)
+            RDD-init-transco-apogee[-_]*.zip|RDD-init-transco-scolarix[-_]*.zip|RDD-init-transco-sve[-_]*.zip|RDD-init-transco-vierge[-_]*.zip)
                 [ -n "$initsrc" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation et de transcodification"
                 initsrc="$arg"
                 source="${arg#RDD-init-transco-}"
                 source="${source%_*}"
                 ;;
-            RDD-init-habilitations-personnes_*.zip)
+            RDD-init-habilitations-personnes[-_]*.zip)
                 [ -n "$initph" ] && die "$arg: il ne faut spécifier qu'un seul fichier d'initialisation des personnes et des habilitations"
                 initph="$arg"
                 ;;
@@ -297,17 +298,17 @@ function create_workshop() {
                 elif is_devxx "$arg"; then
                     set_devxx "$arg"
                 else
-                    set_version "$arg"
+                    die "$arg: version invalide"
                 fi
                 ;;
-            i=*|image=*)
+            i=*|image=*|rdd-tools[-_]*.tar)
                 if [ "${arg#i=}" != "$arg" ]; then arg="${arg#i=}"
                 elif [ "${arg#image=}" != "$arg" ]; then arg="${arg#image=}"
                 fi
                 [ -n "$rddtools" ] && ewarn "$arg: écrasement de la valeur précédente du fichier image"
                 rddtools="$arg"
                 ;;
-            e=*|m=*|env=*|mypegase=*)
+            e=*|m=*|env=*|mypegase=*|mypegase[-_]*.env)
                 if [ "${arg#e=}" != "$arg" ]; then arg="${arg#e=}"
                 elif [ "${arg#m=}" != "$arg" ]; then arg="${arg#m=}"
                 elif [ "${arg#env=}" != "$arg" ]; then arg="${arg#env=}"
@@ -316,7 +317,7 @@ function create_workshop() {
                 [ -n "$mypegase" ] && ewarn "$arg: écrasement de la valeur précédente du fichier d'environnement"
                 mypegase="$arg"
                 ;;
-            p=*|b=*|pivot=*|bdd=*|pivotbdd=*)
+            p=*|b=*|pivot=*|bdd=*|pivotbdd=*|rdd-tools-pivot[-_]*.tar.gz)
                 if [ "${arg#p=}" != "$arg" ]; then arg="${arg#p=}"
                 elif [ "${arg#b=}" != "$arg" ]; then arg="${arg#b=}"
                 elif [ "${arg#pivot=}" != "$arg" ]; then arg="${arg#pivot=}"
@@ -357,20 +358,6 @@ function create_workshop() {
                     set_vxx "$arg"
                 elif is_devxx "$arg"; then
                     set_devxx "$arg"
-                elif [[ "$arg" == *.*.* ]]; then
-                    check_version "$arg"
-                    set_version "$arg"
-                elif [[ "$arg" == 0.1.0-dev.* ]]; then
-                    check_devxx "$arg"
-                    set_devxx "$arg"
-                elif [[ "$arg" == dev.* ]] && ispnum "${arg#dev.}"; then
-                    arg=0.1.0-dev."${arg#dev.}"
-                    check_devxx "$arg"
-                    set_devxx "$arg"
-                elif [[ "$arg" == dev* ]] && ispnum "${arg#dev}"; then
-                    arg=0.1.0-dev."${arg#dev}"
-                    check_devxx "$arg"
-                    set_devxx "$arg"
                 elif [ -z "$wksdir" ]; then
                     wksdir="$arg"
                 else
@@ -380,6 +367,18 @@ function create_workshop() {
             esac
         fi
     done
+
+    # si $LASTDEV ou $LASTREL existent, les prendre comme source par défaut
+    if [ -z "$source_wksdir" ]; then
+        if [ -d "$RDDMGR/$LASTDEV" ]; then
+            enote "Sélection automatique de $(readlink "$RDDMGR/$LASTDEV") comme atelier source"
+            source_wksdir="$LASTDEV"
+        elif [ -d "$RDDMGR/$LASTREL" ]; then
+            enote "Sélection automatique de $(readlink "$RDDMGR/$LASTREL") comme atelier source"
+            source_wksdir="$LASTREL"
+        fi
+    fi
+    [ "$source_wksdir" == none ] && source_wksdir=
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## calcul de la version
@@ -407,7 +406,7 @@ function create_workshop() {
             wksdir="v${version%%.*}"
         elif [ -n "$rddtools" ]; then
             setx arg=basename "$rddtools"
-            arg="${arg#rdd-tools_}"
+            arg="${arg#rdd-tools[-_]}"
             arg="${arg%.tar}"
             if is_devxx "$arg"; then
                 set_devxx "$arg"
@@ -419,7 +418,7 @@ function create_workshop() {
         else
             die "Vous devez spécifier la version de l'image"
         fi
-        [ -n "$wksdir" ] && enote "Sélection automatique de $wksdir.wks d'après la version $version"
+        [ -n "$wksdir" ] && enote "Sélection automatique de $wksdir.wks comme destination d'après la version $version"
     fi
 
     [ -n "$wksdir" ] || die "vous devez spécifier le nom de l'atelier à créer"
@@ -429,7 +428,9 @@ function create_workshop() {
     wksdir="${wksdir%.wks}.wks"
 
     WKSDIR="$RDDMGR/$wksdir"
-    [ -d "$WKSDIR" -a -z "$Recreate" ] && die "$wksdir: cet atelier existe déjà"
+    if [ -d "$WKSDIR" -a -z "$Recreate" -a ! -f "$WKSDIR/.uninitialized_wks" ]; then
+        die "$wksdir: cet atelier existe déjà"
+    fi
 
     if [ -z "$version" ]; then
         version="$svrddtools"
@@ -441,48 +442,59 @@ function create_workshop() {
     ## Calcul des sources
 
     local -a files; local file v
+
+    files=()
     if [ -z "$rddtools" ]; then
         v="$version"
-        files=()
         [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/rdd-tools_$v.tar")
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"rdd-tools_$v.tar")
-        for file in "${files[@]}"; do
-            if [ -f "$file" ]; then
-                rddtools="$file"
-                break
-            fi
-        done
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"rdd-tools"{_,-}"$v.tar")
+    elif [[ "$rddtools" != */* ]]; then
+        # sans chemin, vérifier si le fichier est déjà en local
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$rddtools")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"$rddtools")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            rddtools="$file"
+            break
+        fi
+    done
+
+    files=()
     if [ -z "$mypegase" ]; then
         [ -n "$devxx" ] && v="$svmypegase" || v="$version"
-        files=()
         [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/mypegase_$v.env")
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"mypegase_$v.env")
-        for file in "${files[@]}"; do
-            if [ -f "$file" ]; then
-                mypegase="$file"
-                break
-            fi
-        done
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"mypegase"{_,-}"$v.env")
+    elif [[ "$mypegase" != */* ]]; then
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$mypegase")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"$mypegase")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            mypegase="$file"
+            break
+        fi
+    done
+
+    files=()
     if [ -z "$pivotbdd" ]; then
         [ -n "$devxx" ] && v="$svpivotbdd" || v="$version"
-        files=()
-        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/rdd-tools-pivot_$v"{/,.tar.gz})
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"rdd-tools-pivot_$v.tar.gz")
-        for file in "${files[@]}"; do
-            if [ -d "$file" ]; then
-                pivotbdd="${file%/}"
-                break
-            elif [ -f "$file" ]; then
-                pivotbdd="$file"
-                break
-            fi
-        done
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/rdd-tools-pivot_$v"{,.tar.gz})
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"rdd-tools-pivot"{_,-}"$v.tar.gz")
+    elif [[ "$pivotbdd" != */* ]]; then
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$pivotbdd")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"$pivotbdd")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" -o -d "$file" ]; then
+            pivotbdd="$file"
+            break
+        fi
+    done
+
     if [ -z "$scriptx" ]; then
         files=()
-        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"RDD-scripts-externes_$version.zip")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"RDD-scripts-externes"{_,-}"$version.zip")
         for file in "${files[@]}"; do
             if [ -f "$file" ]; then
                 scriptx="$file"
@@ -490,13 +502,14 @@ function create_workshop() {
             fi
         done
     fi
+
     if [ -z "$initsrc" ]; then
         files=()
         if [ -n "$shareddir" ]; then
             if [ -n "$source" ]; then
-                files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-transco-${source}_$version.zip")
+                files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-transco-${source}"{_,-}"$version.zip")
             else
-                files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-transco-"{apogee,scolarix,sve,vierge}"_$version.zip")
+                files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-transco-"{apogee,scolarix,sve,vierge}""{_,-}"$version.zip")
             fi
         fi
         for file in "${files[@]}"; do
@@ -505,15 +518,16 @@ function create_workshop() {
                 if [ -z "$source" ]; then
                     setx source=basename "$file"
                     source="${source#RDD-init-transco-}"
-                    source="${source%_*}"
+                    source="${source%[_-]*}"
                 fi
                 break
             fi
         done
     fi
+
     if [ -z "$initph" ]; then
         files=()
-        [ -n "$shareddir" ] && files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-habilitations-personnes_$vxx.zip")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-habilitations-personnes"{_,-}"$vxx.zip")
         for file in "${files[@]}"; do
             if [ -f "$file" ]; then
                 initph="$file"
@@ -524,6 +538,7 @@ function create_workshop() {
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## Calcul des fichiers à copier/télécharger
+
     esection "Résumé des actions"
 
     if [ -d "$WKSDIR" ]; then
@@ -534,11 +549,13 @@ function create_workshop() {
 
     if [ -n "$rddtools" ]; then
         setx rddtoolsname=basename "$rddtools"
-        rddtools_version="${rddtoolsname#rdd-tools_}"
+        rddtools_version="${rddtoolsname#rdd-tools[-_]}"
         rddtools_version="${rddtools_version%.tar}"
+        rddtoolsnorm="rdd-tools_$rddtools_version.tar"
     else
         rddtoolsname="rdd-tools_$version.tar"
         rddtools_version="$version"
+        rddtoolsnorm="$rddtoolsname"
     fi
     if [ -n "$(dklsimg "$rddtools_version")" ]; then
         # l'image est déjà importée
@@ -547,27 +564,33 @@ function create_workshop() {
         else
             enote "$RDDTOOLS_IMAGE:$rddtools_version: l'image est déjà importée"
         fi
-    elif [ -n "$rddtools" ]; then
+    elif [ -f "$rddtools" ]; then
         estep "$rddtools: ce fichier sera copié et importé"
     else
-        estep "le fichier rdd-tools_$version.tar sera téléchargé et importé"
+        estep "le fichier $rddtoolsname sera téléchargé et importé"
     fi
 
     if [ -n "$mypegase" ]; then
         setx mypegasename=basename "$mypegase"
-        mypegase_version="${mypegasename#mypegase_}"
+        mypegase_version="${mypegasename#mypegase[-_]}"
         mypegase_version="${mypegase_version%.env}"
     else
         mypegasename="mypegase_$version.env"
         mypegase_version="$version"
     fi
-    if [ -f "$WKSDIR/init/$mypegasename" ]; then
+    if is_devxx -a "$mypegase_version"; then
+        set_devxx "$mypegase_version" "" "" mypegase_version mypegase_vxx mypegase_devxx
+        mypegasenorm="mypegase_$mypegase_version.env"
+    else
+        mypegasenorm="$mypegasename"
+    fi
+    if [ -f "$WKSDIR/init/$mypegasenorm" ]; then
         if [ -n "$mypegase" ]; then
             ewarn "$mypegase: ce fichier sera ignoré, le fichier est déjà présent"
         else
-            enote "$mypegasename: le fichier est présent"
+            enote "$mypegasenorm: le fichier est présent"
         fi
-    elif [ -n "$mypegase" ]; then
+    elif [ -f "$mypegase" ]; then
         estep "$mypegase: ce fichier sera copié"
     else
         estep "$mypegasename: ce fichier sera téléchargé"
@@ -575,21 +598,29 @@ function create_workshop() {
 
     if [ -n "$pivotbdd" ]; then
         setx pivotbddname=basename "$pivotbdd"
-        pivotbdd_version="${pivotbddname#rdd-tools-pivot_}"
+        pivotbdd_version="${pivotbddname#rdd-tools-pivot[-_]}"
         pivotbdd_version="${pivotbdd_version%.tar.gz}"
     else
         pivotbddname="rdd-tools-pivot_$version.tar.gz"
         pivotbdd_version="$version"
     fi
-    pivotbdddir="rdd-tools-pivot_$pivotbdd_version"
+    if is_devxx -a "$pivotbdd_version"; then
+        set_devxx "$pivotbdd_version" "" "" pivotbdd_version pivotbdd_vxx pivotbdd_devxx
+        pivotbddnorm="rdd-tools-pivot_$pivotbdd_version.tar.gz"
+    else
+        pivotbddnorm="$pivotbddname"
+    fi
+    pivotbdddir="${pivotbddnorm%.tar.gz}"
     if [ -d "$WKSDIR/init/$pivotbdddir" ]; then
         if [ -n "$pivotbdd" ]; then
             ewarn "$pivotbdd: ce fichier sera ignoré, le répertoire est déjà présent"
         else
             enote "$pivotbdddir: le répertoire est présent"
         fi
-    elif [ -n "$pivotbdd" ]; then
+    elif [ -f "$pivotbdd" ]; then
         estep "$pivotbdd: ce fichier sera copié"
+    elif [ -d "$pivotbdd" ]; then
+        estep "$pivotbdd: ce répertoire sera copié"
     else
         estep "$pivotbddname: ce fichier sera téléchargé"
     fi
@@ -601,13 +632,13 @@ function create_workshop() {
     else
         if [ -n "$scriptx" ]; then
             setx scriptxname=basename "$scriptx"
-            tversion="${scriptxname#RDD-scripts-externes_}"
+            tversion="${scriptxname#RDD-scripts-externes[-_]}"
             tversion="${tversion%.zip}"
         else
             scriptxname="RDD-scripts-externes_$version.zip"
             tversion="$version"
         fi
-        if [ -n "$scriptx" ]; then
+        if [ -f "$scriptx" ]; then
             estep "$scriptx: ce fichier sera copié"
         else
             estep "$scriptxname: ce fichier sera téléchargé"
@@ -624,14 +655,14 @@ function create_workshop() {
     else
         if [ -n "$initsrc" ]; then
             setx initsrcname=basename "$initsrc"
-            tversion="${initsrcname#RDD-init-transco-${source}_}"
+            tversion="${initsrcname#RDD-init-transco-${source}[-_]}"
             tversion="${tversion%.zip}"
         else
             initsrcname="RDD-init-transco-${source}_$version.zip"
             tversion="$version"
         fi
         initsrcdir="RDD-init-transco-${source}_$tversion"
-        if [ -n "$initsrc" ]; then
+        if [ -f "$initsrc" ]; then
             estep "$initsrc: ce fichier sera copié"
         else
             estep "$initsrcname: ce fichier sera téléchargé"
@@ -639,14 +670,14 @@ function create_workshop() {
 
         if [ -n "$initph" ]; then
             setx initphname=basename "$initph"
-            tversion="${initphname#RDD-init-habilitations-personnes_}"
+            tversion="${initphname#RDD-init-habilitations-personnes[-_]}"
             tversion="${tversion%.zip}"
         else
             initphname="RDD-init-habilitations-personnes_$vxx.zip"
             tversion="$vxx"
         fi
         initphdir="RDD-init-habilitations-personnes_$tversion"
-        if [ -n "$initph" ]; then
+        if [ -f "$initph" ]; then
             estep "$initph: ce fichier sera copié"
         else
             estep "$initphname: ce fichier sera téléchargé"
@@ -682,12 +713,12 @@ function create_workshop() {
     if [ -n "$(dklsimg "$version")" ]; then
         estep "L'image a déjà été importée"
         import=
-    elif [ -n "$rddtools" ]; then
-        copy_any "$rddtools" "$wksdirinit" || die
-        rddtools="$wksdirinit/$rddtoolsname"
+    elif [ -f "$rddtools" ]; then
+        copy_any "$rddtools" "$wksdirinit/$rddtoolsnorm" || die
+        rddtools="$wksdirinit/$rddtoolsnorm"
     else
-        rddtools="$wksdirinit/$rddtoolsname"
-        if is_devxx "$rddtoolsname" rdd-tools_ .tar; then
+        rddtools="$wksdirinit/$rddtoolsnorm"
+        if is_devxx "$rddtoolsnorm" rdd-tools_ .tar; then
             download_shared "/RDD/rdd-tools/temp/$rddtoolsname" "$rddtools" || die
         else
             download_shared "/RDD/rdd-tools/$rddtoolsname" "$rddtools" || die
@@ -702,18 +733,18 @@ function create_workshop() {
     fi
     eend
 
-    etitle "Fichier environnement: $mypegasename"
+    etitle "Fichier environnement: $mypegasenorm"
     fixmypegase=1
-    if [ -f "$wksdirinit/$mypegasename" ]; then
+    if [ -f "$wksdirinit/$mypegasenorm" ]; then
         estep "Le fichier est déjà présent"
-        mypegase="$wksdirinit/$mypegasename"
+        mypegase="$wksdirinit/$mypegasenorm"
         fixmypegase=
-    elif [ -n "$mypegase" ]; then
-        copy_any "$mypegase" "$wksdirinit" || die
-        mypegase="$wksdirinit/$mypegasename"
+    elif [ -f "$mypegase" ]; then
+        copy_any "$mypegase" "$wksdirinit/$mypegasenorm" || die
+        mypegase="$wksdirinit/$mypegasenorm"
     else
-        mypegase="$wksdirinit/$mypegasename"
-        if is_devxx "$mypegasename" mypegase_ .env; then
+        mypegase="$wksdirinit/$mypegasenorm"
+        if is_devxx -a "$mypegasenorm" mypegase_ .env; then
             download_shared "/RDD/rdd-tools/temp/$mypegasename" "$mypegase" || die
         else
             download_shared "/RDD/rdd-tools/$mypegasename" "$mypegase" || die
@@ -733,12 +764,15 @@ function create_workshop() {
     elif [ -f "$wksdirinit/$pivotbddname" ]; then
         estep "Le fichier est présent"
         pivotbdd="$wksdirinit/$pivotbddname"
-    elif [ -n "$pivotbdd" ]; then
-        copy_any "$pivotbdd" "$wksdirinit" || die
-        pivotbdd="$wksdirinit/$pivotbddname"
+    elif [ -f "$pivotbdd" ]; then
+        copy_any "$pivotbdd" "$wksdirinit/$pivotbddnorm" || die
+        pivotbdd="$wksdirinit/$pivotbddnorm"
+    elif [ -d "$pivotbdd" ]; then
+        copy_any "$pivotbdd" "$wksdirinit/$pivotbddnorm" || die
+        pivotbdd="$wksdirinit/$pivotbddnorm"
     else
-        pivotbdd="$wksdirinit/$pivotbddname"
-        if is_devxx "$pivotbddname" rdd-tools-pivot_ .tar.gz; then
+        pivotbdd="$wksdirinit/$pivotbddnorm"
+        if is_devxx -a "$pivotbddnorm" rdd-tools-pivot_ .tar.gz; then
             download_shared "/RDD/rdd-tools/temp/$pivotbddname" "$pivotbdd" || die
         else
             download_shared "/RDD/rdd-tools-pivot/$pivotbddname" "$pivotbdd" || die
@@ -748,6 +782,13 @@ function create_workshop() {
         if [ -f "$pivotbdd" ]; then
             estep "Extraction de l'archive"
             tar xzf "$pivotbdd" -C "$wksdirinit" || die
+
+            # normaliser le nom du répertoire
+            local no="pivotbdddir"
+            local na="${no/rdd-tools-pivot_/rdd-tools-pivot-}"
+            if [ -d "$wksdirinit/$na" -a ! -d "$wksdirinit/$no" ]; then
+                mv "$na" "$no"
+            fi
 
             #estep "Suppression de l'archive source"
             #rm "$pivotbdd" || die
@@ -768,7 +809,7 @@ function create_workshop() {
     elif [ -f "$wksdirinit/$scriptxname" ]; then
         estep "Le fichier est présent"
         scriptx="$wksdirinit/$scriptxname"
-    elif [ -n "$scriptx" ]; then
+    elif [ -f "$scriptx" ]; then
         copy_any "$scriptx" "$wksdirinit" || die
         scriptx="$wksdirinit/$scriptxname"
     else
@@ -804,7 +845,7 @@ function create_workshop() {
         elif [ -f "$wksdirinit/$initsrcname" ]; then
             estep "Le fichier est présent"
             initsrc="$wksdirinit/$initsrcname"
-        elif [ -n "$initsrc" ]; then
+        elif [ -f "$initsrc" ]; then
             copy_any "$initsrc" "$wksdirinit" || die
             initsrc="$wksdirinit/$initsrcname"
         else
@@ -832,7 +873,7 @@ function create_workshop() {
         elif [ -f "$wksdirinit/$initphname" ]; then
             estep "Le fichier est présent"
             initph="$wksdirinit/$initphname"
-        elif [ -n "$initph" ]; then
+        elif [ -f "$initph" ]; then
             copy_any "$initph" "$wksdirinit" || die
             initph="$wksdirinit/$initphname"
         else
@@ -1446,7 +1487,7 @@ function download_shared() {
     if cat "$work" | head -n5 | grep -q '<!DOCTYPE html'; then
         # fichier pourri
         rm "$work"
-        eerror "Fichier introuvable"
+        eerror "$file: fichier introuvable"
         return 1
     fi
     mv "$work" "$dest" || return 1
@@ -1455,21 +1496,38 @@ function download_shared() {
 function is_version() {
     # vérifier si le fichier $1 (dont on enlève le préfixe $2 et le suffixe $3) a
     # une version de la forme MM[.mm[.pp]]
+    # avec l'option -m, la forme MM est refusée (il faut au moins MM.mm)
+    local requireMm
+    if [ "$1" == -m ]; then
+        requireMm=1
+        shift
+    fi
     local version="$1" tmp major minor patch
     tmp="$version"
     [ -n "$2" ] && tmp="${tmp#$2}"
     [ -n "$3" ] && tmp="${tmp%$3}"
 
-    ispnum "$tmp" && return
+    # MM
+    if ispnum "$tmp"; then
+        [ -z "$requireMm" ]; return $?
+    fi
     major="${tmp%%.*}"; tmp="${tmp#*.}"
-    ispnum "$major" || return 1
+    if ispnum "$major"; then
+        [ -z "$requireMm" ]; return $?
+    else
+        return 1
+    fi
+    if [ -z "$tmp" ]; then
+        [ -z "$requireMm" ]; return $?
+    fi
 
-    [ -z "$tmp" ] && return
+    # MM.mm
     ispnum "$tmp" && return
     minor="${tmp%%.*}"; tmp="${tmp#*.}"
     ispnum "$minor" || return 1
-
     [ -z "$tmp" ] && return
+
+    # MM.mm.pp
     ispnum "$tmp" && return
     patch="${tmp%%.*}"; tmp="${tmp#*.}"
     ispnum "$patch" || return 1
@@ -1481,10 +1539,11 @@ function check_version() {
     is_version "$version" || die "$version: version invalide"
 }
 function set_version() {
-    local version="$1" tmp major minor patch vxx devxx
-    tmp="$version"
-    [ -n "$2" ] && tmp="${tmp#$2}"
-    [ -n "$3" ] && tmp="${tmp%$3}"
+    local version="$1"; shift
+    local tmp="$version"
+    [ -n "$1" ] && eval "tmp=\${tmp#$1}"; shift
+    [ -n "$1" ] && eval "tmp=\${tmp%$1}"; shift
+    eval "local major minor patch vxx devxx $1 $2 $3"
 
     if ispnum "$tmp"; then
         version="$tmp.0.0"
@@ -1502,7 +1561,7 @@ function set_version() {
             fi
         fi
     fi
-    upvars version "$version" vxx "V${version%%.*}" devxx ""
+    upvars "${1:-version}" "$version" "${2:-vxx}" "V${version%%.*}" "${3:-devxx}" ""
 }
 
 function is_vxx() {
@@ -1521,36 +1580,66 @@ function check_vxx() {
     is_vxx "$version" || die "$version: version invalide"
 }
 function set_vxx() {
-    local version="$1" tmp vxx devxx
-    tmp="$version"
-    [ -n "$2" ] && tmp="${tmp#$2}"
-    [ -n "$3" ] && tmp="${tmp%$3}"
+    local version="$1"; shift
+    local tmp="$version"
+    [ -n "$1" ] && eval "tmp=\${tmp#$1}"; shift
+    [ -n "$1" ] && eval "tmp=\${tmp%$1}"; shift
+    eval "local vxx devxx $1 $2 $3"
 
-    upvars version "${tmp#[Vv]}.0.0" vxx "${tmp^^}" devxx ""
+    upvars "${1:-version}" "${tmp#[Vv]}.0.0" "${2:-vxx}" "${tmp^^}" "${3:-devxx}" ""
 }
 
 function is_devxx() {
     # vérifier si le fichier $1 (dont on enlève le préfixe $2 et le suffix $3) a
-    # une version de la forme 0.1.0-dev.MM
+    # une version de la forme 0.1.0-dev.MM ou dev.MM ou devMM
+    # avec l'option -a, la forme MM est supportée aussi
+    local allnum
+    if [ "$1" == -a ]; then
+        allnum=1
+        shift
+    fi
     local version="$1" tmp major
     tmp="$version"
     [ -n "$2" ] && tmp="${tmp#$2}"
     [ -n "$3" ] && tmp="${tmp%$3}"
 
-    major="${tmp#0.1.0-dev.}"
-    ispnum "$major" || return 1
+    if [[ "$tmp" == 0.1.0-dev.* ]]; then
+        major="${tmp#0.1.0-dev.}"
+        ispnum "$major" || return 1
+    elif [[ "$tmp" == dev.* ]]; then
+        major="${tmp#dev.}"
+        ispnum "$major" || return 1
+    elif [[ "$tmp" == dev* ]]; then
+        major="${tmp#dev}"
+        ispnum "$major" || return 1
+    elif [ -n "$allnum" ]; then
+        ispnum "$tmp" || return 1
+    else
+        return 1
+    fi
 }
 function check_devxx() {
     local version="$1"
     is_devxx "$version" || die "$version: version invalide"
 }
 function set_devxx() {
-    local version="$1" tmp vxx devxx
-    tmp="$version"
-    [ -n "$2" ] && tmp="${tmp#$2}"
-    [ -n "$3" ] && tmp="${tmp%$3}"
+    local version="$1"; shift
+    local tmp="$version"
+    [ -n "$1" ] && eval "tmp=\${tmp#$1}"; shift
+    [ -n "$1" ] && eval "tmp=\${tmp%$1}"; shift
+    eval "local vxx devxx $1 $2 $3"
 
-    upvars version "$tmp" vxx "" devxx "${tmp#0.1.0-dev.}"
+    if [[ "$tmp" == 0.1.0-dev.* ]]; then
+        major="${tmp#0.1.0-dev.}"
+    elif [[ "$tmp" == dev.* ]]; then
+        major="${tmp#dev.}"
+    elif [[ "$tmp" == dev* ]]; then
+        major="${tmp#dev}"
+    else
+        major="$tmp"
+    fi
+
+    upvars "${1:-version}" "0.1.0-dev.$major" "${2:-vxx}" "" "${3:-devxx}" "$major"
 }
 
 function merge_vars() {
