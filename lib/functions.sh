@@ -430,42 +430,56 @@ function create_workshop() {
     ## Calcul des sources
 
     local -a files; local file v
+
+    files=()
     if [ -z "$rddtools" ]; then
         v="$version"
-        files=()
         [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/rdd-tools_$v.tar")
         [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"rdd-tools"{_,-}"$v.tar")
-        for file in "${files[@]}"; do
-            if [ -f "$file" ]; then
-                rddtools="$file"
-                break
-            fi
-        done
+    elif [[ "$rddtools" != */* ]]; then
+        # sans chemin, vérifier si le fichier est déjà en local
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$rddtools")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"$rddtools")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            rddtools="$file"
+            break
+        fi
+    done
+
+    files=()
     if [ -z "$mypegase" ]; then
         [ -n "$devxx" ] && v="$svmypegase" || v="$version"
-        files=()
         [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/mypegase_$v.env")
         [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"mypegase"{_,-}"$v.env")
-        for file in "${files[@]}"; do
-            if [ -f "$file" ]; then
-                mypegase="$file"
-                break
-            fi
-        done
+    elif [[ "$mypegase" != */* ]]; then
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$mypegase")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools/,}"$mypegase")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            mypegase="$file"
+            break
+        fi
+    done
+
+    files=()
     if [ -z "$pivotbdd" ]; then
         [ -n "$devxx" ] && v="$svpivotbdd" || v="$version"
-        files=()
         [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/rdd-tools-pivot_$v"{,.tar.gz})
         [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"rdd-tools-pivot"{_,-}"$v.tar.gz")
-        for file in "${files[@]}"; do
-            if [ -f "$file" -o -d "$file" ]; then
-                pivotbdd="$file"
-                break
-            fi
-        done
+    elif [[ "$pivotbdd" != */* ]]; then
+        [ -n "$source_wksdir" ] && files+=("$source_wksdir/init/$pivotbdd")
+        [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"$pivotbdd")
     fi
+    for file in "${files[@]}"; do
+        if [ -f "$file" -o -d "$file" ]; then
+            pivotbdd="$file"
+            break
+        fi
+    done
+
     if [ -z "$scriptx" ]; then
         files=()
         [ -n "$shareddir" ] && files+=("$shareddir/"{rdd-tools-pivot/,}"RDD-scripts-externes"{_,-}"$version.zip")
@@ -476,6 +490,7 @@ function create_workshop() {
             fi
         done
     fi
+
     if [ -z "$initsrc" ]; then
         files=()
         if [ -n "$shareddir" ]; then
@@ -497,6 +512,7 @@ function create_workshop() {
             fi
         done
     fi
+
     if [ -z "$initph" ]; then
         files=()
         [ -n "$shareddir" ] && files+=("$shareddir/"{fichiers_init_et_transcos/,}"RDD-init-habilitations-personnes"{_,-}"$vxx.zip")
