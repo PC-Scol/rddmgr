@@ -1,3 +1,7 @@
+## Version 0.6.1 du 29/02/2024-15:28
+
+* `7a8f3f0` maj doc
+
 ## Version 0.6.0 du 28/02/2024-17:51
 
 * `0d3b59e` Intégration de la branche wip/vn
