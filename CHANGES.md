@@ -1,3 +1,7 @@
+## Version 0.6.2 du 29/02/2024-18:17
+
+* `2a92315` édition: mettre les variables supplémentaires au début
+
 ## Version 0.6.1 du 29/02/2024-15:28
 
 * `7a8f3f0` maj doc
