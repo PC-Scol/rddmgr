@@ -142,16 +142,25 @@ la définition de la base pivot depuis l'atelier v22.wks existant:
 ~~~sh
 ./rddmgr -c dev894 v22.wks
 ~~~
+Le résultat est un atelier avec une image de version 0.1.0-dev.894 téléchargé
+depuis l'espace partagé PC-Scol, un fichier mypegase.env de version 22.0.0 copié
+depuis v22.wks et une base pivot de version 22.0.0 copié aussi depuis v22.wks
 
 Voici un autre exemple: ici, les versions de l'image de dev et du fichier
 d'environnement sont différents. Les autres fichiers sont copiés depuis
-l'atelier existant:
+l'atelier courant existant.
 ~~~sh
-./rddmgr -c rdd-tools_0.1.0-dev.911.tar mypegase-911.env v22.wks
+./rddmgr -c dev911 mypegase-911.env
 ~~~
+Dans cet exemple, on part du principe que la commande a été lancée après la
+précédente. L'atelier courant est donc dev894.wks. Le résultat est un atelier
+avec une image de version 0.1.0-dev.911 téléchargé depuis l'espace partagé
+PC-Scol, un fichier mypegase.env de version 0.1.0-dev.911 téléchargé depuis
+l'espace partagé PC-Scol et une base pivot de version 22.0.0 copié depuis
+dev894.wks
 
-Par défaut, l'atelier courant est sélectionné comme source. L'atelier courant
-est, dans cet ordre:
+Comme démontré dans l'exemple précédent, par défaut, l'atelier courant est
+sélectionné comme source. L'atelier courant est, dans cet ordre:
 * soit l'atelier de la dernière image de développement
 * soit l'atelier de la dernière release
 
