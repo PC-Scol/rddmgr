@@ -58,23 +58,23 @@ with open(args.user[0], "rt", encoding="utf-8") as inf:
 action = args.action or 'export'
 
 if action == 'export':
-    if args.tmpfile is None: outf = sys.stdout
-    else: outf = open(args.tmpfile, "wt", encoding="utf-8")
     written_vars = {}
+    alines = [] # lignes de mypegase
+    blines = [] # lignes supplémentaires
     for row in mypegase_rows:
         name = row["name"]
         if name is None:
-            outf.write("%s\n" % row["line"])
+            alines.append("%s\n" % row["line"])
         elif name in system_params:
             value = system_params[name]
             # masquer les mots de passe
             if name.startswith("PWD_"): value = "XXX"
             elif re.search(r'password', name, re.I) is not None: value = "XXX"
-            outf.write("#%s=%s ### PARAMETRE NON MODIFIABLE\n" % (name, value))
+            alines.append("#%s=%s ### PARAMETRE NON MODIFIABLE\n" % (name, value))
             written_vars[name] = True
         else:
             value = user_params[name] if name in user_params else row["value"]
-            outf.write("%s=%s\n" % (name, value))
+            alines.append("%s=%s\n" % (name, value))
             written_vars[name] = True
     # Variables supplémentaires
     first = True
@@ -82,13 +82,22 @@ if action == 'export':
         if name in written_vars: continue
         if first:
             first = False
-            outf.write("""
-# ------------------------------------------------------------------------------
-# Ces paramètres sont dans votre fichier d'environnements mais ne figurent pas
-# ou plus dans mypegase.env
+        blines.append("%s=%s\n" % (name, value))
+
+    if args.tmpfile is None: outf = sys.stdout
+    else: outf = open(args.tmpfile, "wt", encoding="utf-8")
+    if blines:
+        outf.write("""\
+###############################################################################
+# Les paramètres suivants sont dans votre fichier d'environnements mais ne
+# figurent pas ou plus dans mypegase.env
 # Vérifiez que vous n'avez pas fait une erreur ou manqué une mise à jour!
+
 """)
-        outf.write("%s=%s\n" % (name, value))
+        outf.writelines(blines)
+        outf.write("\n")
+    outf.writelines(alines)
+    outf.close()
             
 elif action == 'import':
     if args.tmpfile is None:
