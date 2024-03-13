@@ -1,3 +1,11 @@
+## Version 0.7.0 du 13/03/2024-08:00
+
+* `8518630` maj nulib
+* `d8aecb4` maj doc pour faciliter le copier/collé
+* `ba2797d` début support WSL
+* `f63df9b` maj nulib
+* `e61b265` typo
+
 ## Version 0.6.2 du 29/02/2024-18:17
 
 * `2a92315` édition: mettre les variables supplémentaires au début
