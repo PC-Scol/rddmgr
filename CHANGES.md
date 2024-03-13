@@ -1,3 +1,7 @@
+## Version 0.7.1 du 13/03/2024-08:07
+
+* `3741917` ajouter la documentation pour WSL
+
 ## Version 0.7.0 du 13/03/2024-08:00
 
 * `8518630` maj nulib
