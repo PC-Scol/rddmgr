@@ -1,4 +1,4 @@
-# Pré-requis rddmgr
+# Pré-requis sous Linux
 
 rddmgr est développé et testé sur Debian 11. Il devrait fonctionner sur
 n'importe quel système Linux, pourvu que les pré-requis soient respectés.
@@ -15,7 +15,8 @@ Les programmes suivants sont nécessaires:
 * docker
   (podman n'a pas été testé, je ne sais pas si ça marche avec)
 
-Les instructions suivantes permettent d'installer ce qui est nécessaire sous Debian 11:
+Les instructions suivantes permettent d'installer ce qui est nécessaire sous
+Debian Linux:
 
 Ouvrir un terminal, et vérifier que l'utilisateur courant est sudoer
 ~~~sh
