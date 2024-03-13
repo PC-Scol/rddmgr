@@ -35,10 +35,12 @@ su -
 Puis créer le fichier sudoer pour l'utilisateur jclain, connecté en root
 ~~~sh
 user=jclain
-
+~~~
+~~~sh
 echo "$user ALL=(ALL:ALL) ALL" >/etc/sudoers.d/$user &&
 chmod 440 /etc/sudoers.d/$user
-
+~~~
+~~~sh
 exit
 ~~~
 
@@ -59,7 +61,8 @@ sudo apt update && sudo apt install git curl rsync tar unzip python3 gawk
 Puis installer docker
 ~~~sh
 curl -fsSL https://get.docker.com | sudo sh
-
+~~~
+~~~sh
 [ -n "$(getent group docker)" ] || sudo groupadd docker
 sudo usermod -aG docker $USER
 ~~~

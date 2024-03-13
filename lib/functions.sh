@@ -1423,19 +1423,6 @@ function echo_no_workshops() {
     ewarn "Il n'y a pas d'atelier pour le moment. Utilisez rddmgr --create pour en créer un"
 }
 
-function should_update() {
-    # faut-il mettre à jour le fichier $1 qui est construit à partir des
-    # fichiers $2..@
-    local dest="$1"; shift
-    [ -f "$dest" ] || return 0
-    local source
-    for source in "$@"; do
-        [ -f "$source" ] || continue
-        [ "$source" -nt "$dest" ] && return 0
-    done
-    return 1
-}
-
 function copy_any() {
     ## copier un fichier ou un répertoire vers un répertoire
     # copie de répertoire à répertoire: le répertoire destination NE DOIT PAS

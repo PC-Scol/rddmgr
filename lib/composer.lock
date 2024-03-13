@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "https://git.univ-reunion.fr/sda-php/nulib.git",
-                "reference": "71035b2b594ec59b0636b3bcbf97ecfd3b555e7e"
+                "reference": "7cbddf02a3de4a9a0e4e3cad4405e647ebb2bb08"
             },
             "require": {
                 "php": ">=7.4"
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "fonctions et classes essentielles",
-            "time": "2024-01-06T11:09:20+00:00"
+            "time": "2024-03-11T14:18:26+00:00"
         }
     ],
     "packages-dev": [],

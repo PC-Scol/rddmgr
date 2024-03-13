@@ -15,7 +15,8 @@ pré-requis et donne les instructions pour les installer sur Debian 11
 Ouvrez un terminal et clonez le dépôt
 ~~~sh
 git clone https://github.com/PC-Scol/rddmgr.git
-
+~~~
+~~~sh
 cd rddmgr
 ~~~
 
@@ -78,7 +79,7 @@ L'alternative est de télécharger manuellement tous les fichiers nécessaires p
 de spécifier le répertoire qui les contient. Dans l'exemple suivant, la source
 de données est APOGEE, on ne télécharge donc que le fichier init et transcos
 pour APOGEE:
-~~~sh
+~~~console
 $ ls path/to/dl
 rdd-tools_22.0.0.tar
 mypegase_22.0.0.env
@@ -108,7 +109,8 @@ Dans l'exemple suivant, on crée un environnement qui sera nommé en fonction de
 l'instance PEGASE cible sélectionnée:
 ~~~sh
 cd v22.wks
-
+~~~
+~~~sh
 ./rddtools -c
 ~~~
 
