@@ -1074,7 +1074,8 @@ function restart_services() {
     local service traefik pgadmin default
     local auto=1 default_all_services=
     local -a services; _set_services "$@"
-    set -- "${services[@]}"
+    set -- ${traefik:+traefik} ${pgadmin:+pgadmin} ${default:+default}
+    set -- "$@" "${services[@]}"
     services=()
 
     stop_services "$@"
