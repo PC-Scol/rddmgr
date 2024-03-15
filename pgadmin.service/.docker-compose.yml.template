@@ -1,0 +1,22 @@
+# -*- coding: utf-8 mode: yaml -*- vim:sw=2:sts=2:et:ai:si:sta:fenc=utf-8
+
+version: "3.8"
+
+services:
+  main:
+    image: @@PRIVAREG@@rddmgr/pgadmin
+    volumes:
+      - ./private/pgadmin-data:/var/lib/pgadmin
+      - ./private/servers.json:/pgadmin4/servers.json
+    restart: unless-stopped
+    networks:
+      @@LBNET@@:
+        aliases:
+          - pgadmin_main
+      @@DBNET@@:
+
+networks:
+  @@LBNET@@:
+    external: true
+  @@DBNET@@:
+    external: true

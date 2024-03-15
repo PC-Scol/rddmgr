@@ -1,0 +1,26 @@
+# -*- coding: utf-8 mode: yaml -*- vim:sw=2:sts=2:et:ai:si:sta:fenc=utf-8
+
+version: "3.8"
+
+services:
+  main:
+    image: @@PRIVAREG@@rddmgr/frontal
+    environment:
+      #@@UL:USE_HTTPS@@DEVEL: 1
+      #@@UL:USE_HTTPS@@BASE_URL: http://@@LBHOST@@:@@HTTP_PORT@@/
+      #@@IF:USE_HTTPS@@BASE_URL: https://@@LBHOST@@:@@HTTPS_PORT@@/
+    volumes:
+      - ./config/apache:/apache-config
+      - ./config/php:/php-config
+      - ./config/ssl:/ssl-config
+      - ../:/var/www/app
+    restart: unless-stopped
+    networks:
+      @@LBNET@@:
+    ports:
+      - "@@LBVIP@@@@HTTP_PORT@@:80"
+      - "@@LBVIP@@@@HTTPS_PORT@@:443"
+
+networks:
+  @@LBNET@@:
+    external: true

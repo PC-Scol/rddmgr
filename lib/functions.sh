@@ -1,5 +1,6 @@
 # -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
 # Fonctions de support pour rddmgr
+require: template
 
 PREREQUISITES=(git curl rsync sudo tar unzip python3 gawk docker)
 
@@ -18,14 +19,30 @@ inspath "$RDDMGR/lib/sbin"
 # fonctions communes
 ################################################################################
 
+function _reset_configs() {
+    Configs=()
+}
+function _source_config() {
+    source "$1"
+    Configs+=("$1")
+}
+function _template_fix_vars() {
+    [ -n "$PRIVAREG" ] && PRIVAREG="${PRIVAREG%/}/"
+    [ -n "$DBVIP" ] && DBVIP="${DBVIP%:}:"
+    [ -n "$LBVIP" ] && LBVIP="${LBVIP%:}:"
+}
+
 function load_config() {
     local config="$1"; shift
     [ -n "$config" ] || config="$RDDMGR/config/rddmgr.conf"
-    source "$RDDMGR/lib/rddmgr.conf"
-    source "$config" || die
-    source "$RDDMGR/config/secrets.conf" || die
+
+    _reset_configs
+    _source_config "$RDDMGR/lib/build.env"
+    _source_config "$RDDMGR/lib/rddmgr.conf"
+    _source_config "$config" || die
+    _source_config "$RDDMGR/config/secrets.conf" || die
     for config in "$@"; do
-        source "$config" || die
+        _source_config "$config" || die
     done
 }
 
@@ -34,19 +51,13 @@ function load_config() {
 ################################################################################
 
 function verifix_config() {
-    mkdir -p "$RDDMGR/config/lib-ext"
+    eval "$(template_locals)"
 
-    [ -f "$RDDMGR/config/secrets.conf" ] || regen-secrets
-
-    local -a configs; local config
-    setx -a configs=ls_files "$RDDMGR/lib/templates/config"
-    for config in "${configs[@]}"; do
-        if [ ! -f "$RDDMGR/config/$config" ]; then
-            cp "$RDDMGR/lib/templates/config/$config" "$RDDMGR/config"
-            chmod 600 "$RDDMGR/config/$config"
-            eimportant "Vous devez examiner et renseigner le fichier config/$config"
-        fi
-    done
+    template_copy_missing "$RDDMGR/lib/.build.env.dist" && updated=1
+    template_copy_missing "$RDDMGR/config/.secrets.conf.dist" && updated=1
+    template_copy_missing "$RDDMGR/config/.pegase.yml.dist" && updated=1
+    template_copy_missing "$RDDMGR/config/.sources.yml.dist" && updated=1
+    template_process_userfiles
 
     if [ ! -f "$RDDMGR/config/rddmgr.conf" ]; then
         einfo "installation du fichier config/rddmgr.conf par défaut"
@@ -57,15 +68,16 @@ function verifix_config() {
     print
   }
 }'
+        userfiles+=("$RDDMGR/config/rddmgr.conf")
+        updated=1
+    fi
 
-        if ask_yesno "Voulez-vous examiner la configuration par défaut?" O; then
-            less -F "$RDDMGR/config/rddmgr.conf"
-            enote "\
-Le cas échéant, modifiez la configuration avant de relancer ce script:
-    $EDITOR config/rddmgr.conf
+    if [ -n "$updated" ]; then
+        enote "\
+Veuillez vérifier et corriger la configuration avant de relancer ce script:
+    $EDITOR ${userfiles[*]#$RDDMGR/}
     ./rddmgr"
-            exit
-        fi
+        exit
     fi
 }
 
@@ -100,56 +112,60 @@ Veuillez les installer puis vous pourrez relancer 'rddmgr --init'"
         done
     fi
 
-    local start_traefik
-    if [ -n "$InitTraefik" ]; then
-        # image traefik
-        if [ -d "$RDDMGR/traefik.service" -a -z "$Reinit" ]; then
-            ewarn "le répertoire traefik.service existe: il ne sera pas écrasé"
-        else
-            if dkrunning rddmgr/traefik-main; then
-                stop_services traefik.service
-                start_traefik=1
-            fi
-
-            estep "Copie du répertoire traefik.service"
-            rsync -a "$RDDMGR/lib/templates/traefik.service/" "$RDDMGR/traefik.service" || die
-
-            estep "Mise à jour des variables dans les fichiers de traefik.service"
-            merge_vars "$RDDMGR/traefik.service"
-
-            if [ -n "$start_traefik" ]; then
-                start_services traefik.service
-            fi
-        fi
+    local start_frontal start_pgadmin
+    if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/frontal; then
+        stop_services frontal.service
+        start_frontal=1
+    fi
+    if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/pgadmin; then
+        stop_services pgadmin.service
+        start_pgadmin=1
     fi
 
-    local start_pgadmin
-    if [ -n "$InitPgadmin" ]; then
-        # image pgadmin
-        if [ -d "$RDDMGR/pgadmin.service" -a -z "$Reinit" ]; then
-            ewarn "le répertoire pgadmin.service existe: il ne sera pas écrasé"
-        else
-            if dkrunning rddmgr/pgadmin-main; then
-                stop_services pgadmin.service
-                start_pgadmin=1
-            fi
+    local -a filter; local service
+    eval "$(template_locals)"
+    for service in pgadmin.service frontal.service; do
+        # les fichiers .*.template sont systématiquement recréés
+        filter=(
+            -type d -name private -prune -or
+            -type l -name ".*.template" -print -or
+            -type f -name ".*.template" -print
+        )
+        setx -a files=find "$RDDMGR/$service" "${filter[@]}"
+        for file in "${files[@]}"; do
+            template_copy_replace "$file"
+        done
+        # les fichiers .*.dist sont créés uniquement s'ils n'existent pas déjà
+        filter=(
+            -type d -name private -prune -or
+            -type l -name ".*.dist" -print -or
+            -type f -name ".*.dist" -print
+        )
+        setx -a files=find "$RDDMGR/$service" "${filter[@]}"
+        for file in "${files[@]}"; do
+            template_copy_missing "$file" && updated=1
+        done
+    done
+    function template_dump_vars() {
+        _template_dump_vars "$@"
+    }
+    function template_source_envs() {
+        _template_source_envs "${Configs[@]}"
+        _template_fix_vars
+    }
+    template_process_userfiles
 
-            estep "Copie du répertoire pgadmin.service"
-            rsync -a "$RDDMGR/lib/templates/pgadmin.service/" "$RDDMGR/pgadmin.service" || die
-
-            estep "Mise à jour des variables dans les fichiers de pgadmin.service"
-            merge_vars "$RDDMGR/pgadmin.service"
-
-            if [ -n "$start_pgadmin" ]; then
-                start_services pgadmin.service
-            fi
-        fi
-
-        estep "Mise à jour de la liste des serveurs"
-        update-pgadmin
+    # Créer le fichier des mots de passe
+    if [ ! -f "$RDDMGR/frontal.service/config/apache/users.ht" ]; then
+        tpasswd -u admin "$ADMIN_PASSWORD" >"$RDDMGR/frontal.service/config/apache/users.ht"
     fi
 
-    if [ -z "$start_traefik" -a -z "$start_pgadmin" ]; then
+    estep "Mise à jour de la liste des serveurs"
+    update-pgadmin
+    [ -n "$start_pgadmin" ] && start_services pgadmin.service
+    [ -n "$start_frontal" ] && start_services frontal.service
+
+    if [ -z "$start_pgadmin" -a -z "$start_frontal" ]; then
         enote "Utilisez rddmgr --start pour démarrer les services"
     fi
 }
@@ -160,10 +176,6 @@ function check_system() {
     edebug "Vérification des réseaux"
     [ -n "$(dklsnet "$DBNET")" ] || die_use_init "Réseau $DBNET introuvable"
     [ -n "$(dklsnet "$LBNET")" ] || die_use_init "Réseau $DBNET introuvable"
-
-    edebug "Vérification des services"
-    [ -d "$RDDMGR/traefik.service" ] || die_use_init "traefik n'a pas été configuré"
-    [ -d "$RDDMGR/pgadmin.service" ] || die_use_init "pgAdmin n'a pas été configuré"
 }
 
 function list_workshops() {
@@ -695,7 +707,7 @@ function create_workshop() {
 
     estep "Copie du répertoire${Recreate:+ avec écrasement}"
     local uninit; [ -d "$WKSDIR" ] || uninit=1
-    rsync -a "$RDDMGR/lib/templates/workshop/" "$WKSDIR/" || die
+    rsync -a "$RDDMGR/lib/workshop.template/" "$WKSDIR/" || die
     [ -n "$uninit" ] && touch "$WKSDIR/.uninitialized_wks"
 
     backupsdir="$RDDMGR/$BACKUPS"
@@ -899,7 +911,40 @@ function create_workshop() {
     RDDTOOLS_VERSION="$rddtools_version"
     MYPEGASE_VERSION="$mypegase_version"
     PIVOTBDD_VERSION="$pivotbdd_version"
-    merge_vars "$WKSDIR"
+
+    # les fichiers .*.template sont systématiquement recréés
+    filter=(
+        -type d -name private -prune -or
+        -type l -name ".*.template" -print -or
+        -type f -name ".*.template" -print
+    )
+    setx -a files=find "$WKSDIR" "${filter[@]}"
+    for file in "${files[@]}"; do
+        template_copy_replace "$file"
+    done
+    # les fichiers .*.dist sont créés uniquement s'ils n'existent pas déjà
+    filter=(
+        -type d -name private -prune -or
+        -type l -name ".*.dist" -print -or
+        -type f -name ".*.dist" -print
+    )
+    setx -a files=find "$WKSDIR" "${filter[@]}"
+    for file in "${files[@]}"; do
+        template_copy_missing "$file" && updated=1
+    done
+    function template_dump_vars() {
+        echo WKSNAME
+        echo RDDTOOLS_IMAGE
+        echo RDDTOOLS_VERSION
+        echo MYPEGASE_VERSION
+        echo PIVOTBDD_VERSION
+        _template_dump_vars "$@"
+    }
+    function template_source_envs() {
+        _template_source_envs "${Configs[@]}"
+        _template_fix_vars
+    }
+    template_process_userfiles
 
     # enlever le marqueur de non initialisation
     # ce marqueur permet de considérer le répertoire comme non existant tant
@@ -971,7 +1016,7 @@ function set_default_workshop() {
 function _set_services() {
     if [ $# -eq 0 -a -n "$default_all_services" ]; then
         # aucun service n'est spécifié: les prendre tous par défaut
-        setx -a services=ls_dirs "$RDDMGR" traefik.service pgadmin.service "*.wks"
+        setx -a services=ls_dirs "$RDDMGR" pgadmin.service frontal.service "*.wks"
         set -- "${services[@]}"
         services=()
     fi
@@ -979,8 +1024,8 @@ function _set_services() {
         setx service=basename "$service"
         auto=
         case "$service" in
-        traefik|traefik.service) traefik=1;;
         pgadmin|pgadmin.service) pgadmin=1;;
+        frontal|frontal.service) frontal=1;;
         default|$LASTREL|$LASTDEV) default=1;;
         *)
             service="${service%.wks}.wks"
@@ -990,36 +1035,35 @@ function _set_services() {
         esac
     done
     if [ -n "$auto" ]; then
-        traefik=1
         pgadmin=1
+        frontal=1
         default=1
     fi
 }
 
 function start_services() {
-    local service traefik pgadmin default
+    local service pgadmin frontal default
     local auto=1 default_all_services=
     local -a services; _set_services "$@"
 
-    if [ -n "$traefik" ]; then
-        cd "$RDDMGR/traefik.service"
-        if dkrunning rddmgr/traefik-main; then
-            enote "traefik est démarré. la console est accessible à l'adresse http://$TRAEFIK_LBHOST:$HTTP_PORT/"
-        else
-            estep "Démarrage de traefik"
-            docker compose up ${BuildBefore:+--build} -d || die
-            enote "la console traefik est accessible à l'adresse http://$TRAEFIK_LBHOST:$HTTP_PORT/"
-        fi
-    fi
-
     if [ -n "$pgadmin" ]; then
         cd "$RDDMGR/pgadmin.service"
-        if dkrunning rddmgr/pgadmin-main; then
-            enote "pgAdmin est démarré et accessible à l'adresse http://$PGADMIN_LBHOST:$HTTP_PORT/"
+        if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/pgadmin; then
+            enote "pgAdmin est démarré"
         else
             estep "Démarrage de pgAdmin"
             docker compose up ${BuildBefore:+--build} -d || die
-            enote "pgAdmin est accessible à l'adresse http://$PGADMIN_LBHOST:$HTTP_PORT/"
+        fi
+    fi
+
+    if [ -n "$frontal" ]; then
+        cd "$RDDMGR/frontal.service"
+        if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/frontal; then
+            enote "frontal est démarré et accessible à l'adresse http://$LBHOST:$HTTP_PORT/"
+        else
+            estep "Démarrage de frontal"
+            docker compose up ${BuildBefore:+--build} -d || die
+            enote "frontal est accessible à l'adresse http://$LBHOST:$HTTP_PORT/"
         fi
     fi
 
@@ -1038,7 +1082,7 @@ function start_services() {
 }
 
 function stop_services() {
-    local service traefik pgadmin default
+    local service pgadmin frontal default
     local auto=1 default_all_services=1
     local -a services; _set_services "$@"
 
@@ -1053,28 +1097,29 @@ function stop_services() {
         fi
     fi
 
-    if [ -n "$pgadmin" ]; then
-        cd "$RDDMGR/pgadmin.service"
-        if dkrunning rddmgr/pgadmin-main; then
-            estep "Arrêt de pgAdmin"
+    if [ -n "$frontal" ]; then
+        cd "$RDDMGR/frontal.service"
+        if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/frontal; then
+            estep "Arrêt de frontal"
             docker compose down || die
         fi
     fi
 
-    if [ -n "$traefik" ]; then
-        cd "$RDDMGR/traefik.service"
-        if dkrunning rddmgr/traefik-main; then
-            estep "Arrêt de traefik"
+    if [ -n "$pgadmin" ]; then
+        cd "$RDDMGR/pgadmin.service"
+        if dkrunning ${PRIVAREG:+$PRIVAREG/}rddmgr/pgadmin; then
+            estep "Arrêt de pgAdmin"
             docker compose down || die
         fi
     fi
 }
 
 function restart_services() {
-    local service traefik pgadmin default
+    local service pgadmin frontal default
     local auto=1 default_all_services=
     local -a services; _set_services "$@"
-    set -- "${services[@]}"
+    set -- ${pgadmin:+pgadmin} ${frontal:+frontal} ${default:+default}
+    set -- "$@" "${services[@]}"
     services=()
 
     stop_services "$@"
@@ -1627,57 +1672,4 @@ function set_devxx() {
     fi
 
     upvars "${1:-version}" "0.1.0-dev.$major" "${2:-vxx}" "" "${3:-devxx}" "$major"
-}
-
-function merge_vars() {
-    local DBVIP="$DBVIP" LBVIP="$LBVIP"
-    [ -n "$DBVIP" ] && DBVIP="${DBVIP%:}:"
-    [ -n "$LBVIP" ] && LBVIP="${LBVIP%:}:"
-    local USE_HTTPS="$USE_HTTPS" SSL="#" NOSSL=
-    if [ -n "$USE_HTTPS" ]; then
-        SSL=
-        NOSSL="#"
-    fi
-    local USE_LETSENC="$USE_LETSENC" LETSENC="#" NOLETSENC=
-    if [ -n "$USE_LETSENC" ]; then
-        LETSENC=
-        NOLETSENC="#"
-    fi
-    local TRAEFIK_PASSWORD="$TRAEFIK_PASSWORD" TRAEFIKP="#" NOTRAEFIKP=
-    if [ -n "$TRAEFIK_PASSWORD" ]; then
-        setx TRAEFIK_PASSWORD=tpasswd -u admin "$TRAEFIK_PASSWORD"
-        TRAEFIKP=
-        NOTRAEFIKP="#"
-    fi
-    local PGADMIN_PASSWORD="$PGADMIN_PASSWORD" PGADMINP="#" NOPGADMINP=
-    if [ -n "$PGADMIN_PASSWORD" ]; then
-        setx PGADMIN_PASSWORD=tpasswd -u pgadmin -q "$PGADMIN_PASSWORD"
-        PGADMINP=
-        NOPGADMINP="#"
-    fi
-    sed -i "\
-s/@@LBNET@@/$LBNET/g
-s/@@LBVIP@@/$LBVIP/g
-s/@@LBHOST@@/$LBHOST/g
-s/@@HTTP_PORT@@/$HTTP_PORT/g
-s/@@HTTPS_PORT@@/$HTTPS_PORT/g
-s/#@@SSL@@#/$SSL/g; s/#@@NOSSL@@#/$NOSSL/g
-s/#@@LETSENC@@#/$LETSENC/g; s/#@@NOLETSENC@@#/$NOLETSENC/g
-s/@@TRAEFIK_LBHOST@@/$TRAEFIK_LBHOST/g
-s/@@TRAEFIK_PASSWORD@@/${TRAEFIK_PASSWORD//\//\\\/}/g
-s/#@@TRAEFIKP@@#/$TRAEFIKP/g; s/#@@NOTRAEFIK@@#/$NOTRAEFIKP/g
-s/@@PGADMIN_LBHOST@@/$PGADMIN_LBHOST/g
-s/@@PGADMIN_PASSWORD@@/${PGADMIN_PASSWORD//\//\\\/}/g
-s/#@@PGADMINP@@#/$PGADMINP/g; s/#@@NOPGADMINP@@#/$NOPGADMINP/g
-s/@@DBNET@@/$DBNET/g
-s/@@DBVIP@@/$DBVIP/g
-s/@@PGSQL_PORT@@/$PGSQL_PORT/g
-s/@@POSTGRES_PASSWORD@@/${POSTGRES_PASSWORD//\//\\\/}/g
-s/@@PCSCOLPIVOT_PASSWORD@@/${PCSCOLPIVOT_PASSWORD//\//\\\/}/g
-s/@@WKSNAME@@/$WKSNAME/g
-s/@@RDDTOOLS_IMAGE@@/${RDDTOOLS_IMAGE//\//\\\/}/g
-s/@@RDDTOOLS_VERSION@@/$RDDTOOLS_VERSION/g
-s/@@MYPEGASE_VERSION@@/$MYPEGASE_VERSION/g
-s/@@PIVOTBDD_VERSION@@/$PIVOTBDD_VERSION/g
-" $(find "$1" -name private -prune -or -type f -print)
 }

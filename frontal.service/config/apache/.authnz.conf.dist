@@ -1,0 +1,19 @@
+# -*- coding: utf-8 mode: conf -*- vim:syntax=apache:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+
+# Authentification basique
+<Location />
+    AuthType Basic
+    AuthName rddmgr
+    AuthUserFile users.ht
+    Require user admin
+</Location>
+
+# Authentification par CAS: commenter les lignes de l'authentification basique
+# ci-dessus, enlever le PREMIER '#' au début de TOUTES les lignes suivantes,
+# puis adapter la liste des utilisateurs autorisés <authusers...>
+##if BASE_URL_CAS#CASRootProxiedAs @@BASE_URL_CAS@@
+#<Location />
+#    AuthType CAS
+#    CASAuthNHeader On
+#    Require user <authusers...>
+#</Location>

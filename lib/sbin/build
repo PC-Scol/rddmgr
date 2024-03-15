@@ -1,0 +1,92 @@
+#!/bin/bash
+# -*- coding: utf-8 mode: sh -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8
+MYDIR="$(cd "$(dirname -- "$0")"; pwd)"
+MYNAME="$(basename -- "$0")"
+MYSELF="$MYDIR/$MYNAME"
+RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
+
+if [ ! -f "$RDDMGR/lib/vendor/nulib/php/load.sh" ]; then
+    if [ -f "$RDDMGR/lib/build.env" ]; then config="$RDDMGR/lib/build.env"
+    else config="$RDDMGR/lib/.build.env.dist"
+    fi
+    "$RDDMGR/lib/sbin/rundk" -0 --unless-exists -c "$config" || exit 1
+fi
+"$RDDMGR/lib/sbin/bootstrap" && source "$RDDMGR/lib/vendor/nulib/php/load.sh" || exit 1
+source "$RDDMGR/lib/functions.sh"
+
+BUILD_ARGS=(
+    REGISTRY
+    APT_PROXY
+    APT_MIRROR
+    SEC_MIRROR
+    TIMEZONE
+)
+
+function _build() {
+    local image="${PRIVAREG:+$PRIVAREG/}rddmgr/$1"
+    if [ -n "$ForceBuild" -o -z "$(dklsimg "" "$image")" ]; then
+        estep "Construction de $image"
+        args=(
+            -f "$RDDMGR/lib/sbin/Dockerfile.$1"
+            ${NoCache:+--no-cache}
+            ${PlainOutput:+--progress plain}
+            -t "$image"
+        )
+        for arg in "${BUILD_ARGS[@]}"; do
+            args+=(--build-arg "$arg=${!arg}")
+        done
+        docker build "${args[@]}" /tmp/rddmgr-build || die
+        if [ -n "$Push" ]; then
+            if [ -n "$PRIVAREG" ]; then
+                estep "Poussement de $image"
+                docker push "$image" || die
+            else
+                ewarn "PRIVAREG non défini: impossible de pousser l'image"
+            fi
+        fi
+    fi
+}
+function build_images() {
+    local -a args
+    [ -z "$ForceBuild" ] && args+=(--unless-exists)
+    args+=(-0 -c "$RDDMGR/lib/build.env")
+    "$RDDMGR/lib/sbin/rundk" "${args[@]}"
+
+    mkdir -p /tmp/rddmgr-build
+    source "$RDDMGR/lib/build.env"
+    _build pgadmin
+    _build adminer
+    _build frontal
+}
+
+action=build
+ForceBuild=
+NoCache=
+PlainOutput=
+Push=
+args=(
+    "Construire les images pour rddmgr"
+    #"usage"
+    --check-only action=none "++Ne faire que la vérification de l'environnement"
+    --bootstrap action=bootstrap "++Mettre à jour les outils en lançant de nouveau lib/sbin/bootstrap"
+    -r,--rebuild ForceBuild=1 "Forcer la (re)construction de l'image"
+    -j,--no-cache NoCache=1 "++Construire l'image en invalidant le cache"
+    -D,--plain-output PlainOutput=1 "++Afficher le détail du build"
+    -p,--push Push=1 "Pousser les images vers le registry après construction"
+)
+parse_args "$@"; set -- "${args[@]}"
+
+if [ ! -f "$RDDMGR/lib/build.env" ]; then
+    cp "$RDDMGR/lib/.build.env.dist" "$RDDMGR/lib/build.env"
+    enote "IMPORTANT: Veuillez faire le paramétrage en éditant le fichier build.env
+    ${EDITOR:-nano} lib/build.env
+ENSUITE, vous pourrez relancer la commande"
+    exit 0
+fi
+[ "$action" == none ] && exit 0
+
+case "$action" in
+bootstrap) "$RDDMGR/lib/sbin/bootstrap" --force "$@";;
+build) build_images "$@";;
+*) die "$action: action non implémentée";;
+esac

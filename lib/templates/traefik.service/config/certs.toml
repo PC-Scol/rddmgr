@@ -1,3 +1,0 @@
-#[[tls.certificates]]
-#certFile = "/certs/XXX.crt"
-#keyFile = "/certs/XXX.key"

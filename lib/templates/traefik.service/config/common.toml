@@ -1,8 +1,0 @@
-[http.middlewares]
-  [http.middlewares.redir2https.redirectScheme]
-    scheme = "https"
-
-  [http.middlewares.traefik-auth.basicAuth]
-    users = [
-      #@@TRAEFIKP@@#"@@TRAEFIK_PASSWORD@@",
-    ]
