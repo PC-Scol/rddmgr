@@ -13,8 +13,13 @@ if [ -z "$_RUNDK_IN_DOCKER" ]; then
     ################################################################################
     # Charger ~/.dkbuild.env
 
-    REGISTRY="$SET_REGISTRY"
-    RUN_IMAGE="$SET_RUN_IMAGE"
+    APT_PROXY="$RDDMGR_APT_PROXY"
+    APT_MIRROR="$RDDMGR_APT_MIRROR"
+    SEC_MIRROR="$RDDMGR_SEC_MIRROR"
+    TIMEZONE="$RDDMGR_TIMEZONE"
+    PRIVAREG="$RDDMGR_PRIVAREG"
+    REGISTRY="$RDDMGR_REGISTRY"
+    IMAGE="$RDDMGR_IMAGE"
     PROFILE=
     HOST_MAPPINGS=()
     function default_profile() {
@@ -53,12 +58,39 @@ if [ -z "$_RUNDK_IN_DOCKER" ]; then
     }
     [ -f ~/.dkbuild.env ] && source ~/.dkbuild.env
 
+    [ -n "$APT_PROXY" ] || APT_PROXY=
+    [ -n "$APT_MIRROR" ] || APT_MIRROR=default
+    [ -n "$SEC_MIRROR" ] || SEC_MIRROR=default
+    [ -n "$TIMEZONE" ] || TIMEZONE=Europe/Paris
+    [ -n "$PRIVAREG" ] || PRIVAREG=
     [ -n "$REGISTRY" ] || REGISTRY=pubdocker.univ-reunion.fr
-    [ -n "$RUN_IMAGE" ] || RUN_IMAGE="$REGISTRY/image/php:d11"
 
     ################################################################################
     # Lancer la commande depuis l'extérieur du container
 
+    BUILD_ARGS=(
+        REGISTRY
+        APT_PROXY
+        APT_MIRROR
+        SEC_MIRROR
+        TIMEZONE
+    )
+
+    SOPTS=+c:0jDx:z:r:pw:v
+    LOPTS=help,config:,build,unless-exists,no-cache,plain-output,apt-proxy:,timezone:,privareg:,push,chdir:,verbose,no-use-rslave
+    args="$(getopt -n rundk -o "$SOPTS" -l "$LOPTS" -- "$@")" || exit 1; eval "set -- $args"
+
+    if [ -f "$RDDMGR/lib/build.env" ]; then
+        Config="$RDDMGR/lib/build.env"
+    else
+        Config=
+    fi
+    Build=
+    UnlessExists=
+    NoCache=
+    PlainOutput=
+    Chdir=
+    Verbose=
     if [ -n "$RDDMGR_NO_USE_RSLAVE" ]; then
         UseRslave=
     elif [ -n "$RDDMGR_USE_RSLAVE" ]; then
@@ -69,13 +101,6 @@ if [ -z "$_RUNDK_IN_DOCKER" ]; then
     else
         UseRslave=1
     fi
-
-    SOPTS=+w:v
-    LOPTS=help,chdir:,verbose,no-use-rslave
-    args="$(getopt -n rundk -o "$SOPTS" -l "$LOPTS" -- "$@")" || exit 1; eval "set -- $args"
-
-    CHDIR=
-    VERBOSE=
     while [ $# -gt 0 ]; do
         case "$1" in
         --) shift; break;;
@@ -90,6 +115,16 @@ USAGE
     $MYNAME command [args...]
 
 OPTIONS
+    -c, --config build.env
+    -0, --build
+    --unless-exists
+    -j, --no-cache
+    -D, --plain-output
+    -x, --apt-proxy APT_PROXY
+    -z, --timezone TIMEZONE
+    -r, --privareg PRIVAREG
+    -p, --push
+        construire l'image rundk en local au lieu de la télécharger
     -w, --chdir CHDIR
         aller dans le répertoire spécifié avant de lancer la commande. si le
         répertoire est relatif, il est exprimé par rapport au répertoire de
@@ -98,13 +133,53 @@ OPTIONS
         afficher plus d'informations"
             exit 0
             ;;
-        -w|--chdir) shift; CHDIR="$1";;
-        -v|--verbose) VERBOSE=1;;
+        -c|--config) shift; Config="$1";;
+        -0|--build) Build=1;;
+        --unless-exists) UnlessExists=1;;
+        -j|--no-cache) NoCache=1;;
+        -D|--plain-output) PlainOutput=1;;
+        -x|--apt-proxy) shift; APT_PROXY="$1";;
+        -z|--timezone) shift; TIMEZONE="$1";;
+        -r|--privareg) shift; PRIVAREG="$1";;
+        -p|--push) Push=1;;
+        -w|--chdir) shift; Chdir="$1";;
+        -v|--verbose) Verbose=1;;
         --no-use-rslave) UseRslave=;;
         *) die "$1: option non configurée";;
         esac
         shift
     done
+
+    IMAGENAME=rddmgr/rundk
+    if [ -n "$Build" ]; then
+        [ "$Config" == none ] && Config=
+        if [ -n "$Config" ]; then
+            source "$Config" || exit 1
+        fi
+        if [ -z "$IMAGE" ]; then
+            [ -n "$PRIVAREG" ] && IMAGE="$PRIVAREG/$IMAGENAME" || IMAGE="$REGISTRY/$IMAGENAME"
+        fi
+        if [ -n "$UnlessExists" -a -n "$(docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}}' "$IMAGE" 2>/dev/null)" ]; then
+            exit 0
+        fi
+        args=(
+            -f "$MYDIR/Dockerfile.rundk"
+            ${NoCache:+--no-cache}
+            ${BuildPlain:+--progress plain}
+            -t "$IMAGE"
+        )
+        for arg in "${BUILD_ARGS[@]}"; do
+            args+=(--build-arg "$arg=${!arg}")
+        done
+        mkdir -p /tmp/rundk
+        docker build "${args[@]}" /tmp/rundk || exit 1
+        if [ -n "$Push" -a -n "$PRIVAREG" ]; then
+            docker push "$IMAGE" || exit 1
+        fi
+        exit 0
+    elif [ -z "$IMAGE" ]; then
+        [ -n "$PRIVAREG" ] && IMAGE="$PRIVAREG/$IMAGENAME" || IMAGE="$REGISTRY/$IMAGENAME"
+    fi
 
     uid="$(id -u)"
     gid="$(id -g)"
@@ -151,10 +226,10 @@ OPTIONS
     fi
 
     args+=(
-        "$RUN_IMAGE"
-        exec "$MYSELF" -w "$CHDIR"
+        "$IMAGE"
+        exec "$MYSELF" -w "$Chdir"
     )
-    [ -n "$VERBOSE" ] && eecho "\$ docker ${args[*]} $*"
+    [ -n "$Verbose" ] && eecho "\$ docker ${args[*]} $*"
     exec docker "${args[@]}" "$@"
 
 else
@@ -178,18 +253,18 @@ else
     LOPTS=chdir:
     args="$(getopt -n "$MYNAME" -o "$SOPTS" -l "$LOPTS" -- "$@")" || exit 1; eval "set -- $args"
 
-    CHDIR=
+    Chdir=
     while [ $# -gt 0 ]; do
         case "$1" in
         --) shift; break;;
-        -w|--chdir) shift; CHDIR="$1";;
+        -w|--chdir) shift; Chdir="$1";;
         *) die "$1: option non configurée";;
         esac
         shift
     done
 
-    if [ -n "$CHDIR" ]; then
-        cd "$CHDIR" || die
+    if [ -n "$Chdir" ]; then
+        cd "$Chdir" || die
     fi
     "${@:-bash}"
 fi

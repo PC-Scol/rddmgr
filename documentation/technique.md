@@ -1,3 +1,6 @@
+XXX Cette documentation est obsolète depuis la version `0.8.0`.
+Elle sera mise à jour dès que possible
+
 # Documentation technique
 
 Cette documentation détaille le fonctionnement de rddmgr

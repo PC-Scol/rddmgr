@@ -17,6 +17,8 @@ parse_args "$@"; set -- "${args[@]}"
 cd "$RDDMGR"
 [ -d "pgadmin.service" ] || die "Vous devez d'abord initialiser l'environnement"
 
+load_config
+
 server_indent="  "
 server_comma=
 data_indent="    "
@@ -44,7 +46,8 @@ echo '{"Servers": {'
 setx -a wksdirs=ls_dirs . "*.wks"
 i=1
 for wksdir in "${wksdirs[@]}"; do
-    [ "$wksdir" == default.wks -a -L default.wks ] && continue
+    [ "$wksdir" == "$LASTREL" -a -L "$LASTREL" ] && continue
+    [ "$wksdir" == "$LASTDEV" -a -L "$LASTDEV" ] && continue
 
     eval "$(env_dump-config.py "" "" "$wksdir/.env" --postgres)"
     wksname="${wksdir%.wks}"
@@ -65,7 +68,7 @@ echo '}}'
 [ -z "$debug" ] && exec 1>&6 6>&-
 
 if [ -z "$debug" -a -n "$reload" ]; then
-    setx ctid=dklsct rddmgr/pgadmin-main
+    setx ctid=dklsct ${PRIVAREG:+$PRIVAREG/}rddmgr/pgadmin
     if [ -n "$ctid" ]; then
         docker=(docker exec -it -w /pgadmin4)
         args=(

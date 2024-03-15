@@ -7,7 +7,7 @@ RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
 user=
 quote=
 args=(
-    "hasher un mot de passe pour traefik"
+    "hasher un mot de passe pour apache"
     -u:,--user . "spécifier le nom de l'utilisateur"
     -q,--quote . "mettre en échappement les caractères \$"
 )

@@ -1,2 +1,0 @@
-pgadmin ALL = NOPASSWD: /rootfix.sh
-pgadminr ALL = NOPASSWD: /rootfix.sh

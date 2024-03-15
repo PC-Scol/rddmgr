@@ -21,6 +21,34 @@ git clone https://github.com/PC-Scol/rddmgr.git
 cd rddmgr
 ~~~
 
+Il faut d'abord construire les images utilisées par l'application. Commencer en
+faisant une copie de `build.env` depuis `.build.env.dist`
+~~~sh
+cp lib/.build.env.dist lib/build.env
+~~~
+Il FAUT consulter `lib/build.env` et l'éditer AVANT de continuer. Notamment, les
+variables suivantes doivent être configurées le cas échéant:
+
+`APT_PROXY`
+: proxy pour l'installation des paquets Debian
+
+`APT_MIRROR`
+`SEC_MIRROR`
+: miroirs à utiliser. Il n'est généralement pas nécessaire de modifier ces
+  valeurs
+
+`TIMEZONE`
+: Fuseau horaire, si vous n'êtes pas en France métropolitaine
+
+`PRIVAREG`
+: nom d'un registry docker interne vers lequel les images pourraient être
+  poussées. Il n'est pas nécessaire de modifier ce paramètre.
+
+Une fois le fichier configuré, les images peuvent être construites
+~~~sh
+./lib/sbin/build
+~~~
+
 Créer les modèles de fichiers de configuration:
 ~~~sh
 ./rddmgr --init
@@ -29,7 +57,7 @@ Créer les modèles de fichiers de configuration:
 Les fichiers de configuration suivants sont créés avec des valeurs par défaut:
 
 config/secrets.conf
-: mots de passe traefik, pgadmin, comptes de la base pivot
+: mots de passe traefik et pgadmin, comptes de la base pivot
 
 config/pegase.yml
 : configuration de l'établissement et des instances PEGASE.
@@ -178,7 +206,7 @@ traefik.service
 : frontal web qui permet de servir tous les services de l'installation sur une
   unique adresse IP
 
-pgAdmin.service
+pgadmin.service
 : installation de pgAdmin en mode desktop qui permet d'accéder à toutes les
   bases pivot définies
 
@@ -219,25 +247,28 @@ n'est pas le cas dans cette version de rddmgr.
 pgAdmin est lancé par défaut par rddmgr. Il permet d'accéder aux bases de
 données pivot des ateliers.
 
-Dans le fichier config/rddmgr.conf, le paramètre `PGADMIN_LBHOST` permet de
-définir le nom d'hôte sur lequel attaquer pgAdmin. Bien entendu, il faut que ce
-nom existe au niveau du DNS et doit pointer sur l'adresse IP `LBVIP`
+Dans le fichier `config/rddmgr.conf`, le paramètre `LBHOST` permet de définir le
+nom d'hôte sur lequel attaquer pgAdmin.
 
-Si la configuration par défaut n'est pas modifiée, pgAdmin doit être attaqué à
-l'adresse `pgadmin.localhost` sur le port `7080`. Il est possible de modifier
-le fichier /etc/hosts pour faire un test rapidement:
-~~~sh
-cat <<EOF | sudo tee -a /etc/hosts
-127.0.2.1 traefik.localhost pgadmin.localhost
-EOF
-~~~
-
-Ensuite, se connecter sur <http://pgadmin.localhost:7080> avec le compte
-`pgadmin` et le mot de passe défini dans config/secrets.conf
+Si la configuration par défaut n'est pas modifiée, l'adresse de pgAdmin est
+<http://localhost:7080/pgadmin/> avec le compte `admin` et le mot de passe
+défini dans `config/secrets.conf`
 
 A partir de là, il n'y a plus besoin de mot de passe. Si un mot de passe est
 demandé, il s'agit du mot de passe de `pcscolpipvot`, mais il est plus probable
 que ce soit l'hôte qui ne soit pas accessible (par exemple parce que la base
 pivot n'est pas démarrée)
+
+## traefik
+
+La console traefik permet d'accéder à des informations techniques qui ne sont
+pas utiles en temps normal.
+
+Dans le fichier `config/rddmgr.conf`, le paramètre `LBHOST` permet de définir le
+nom d'hôte sur lequel attaquer la console traefik.
+
+Si la configuration par défaut n'est pas modifiée, l'adresse de la console
+traefik est <http://localhost:7080/traefik/> avec le compte `admin` et le mot de
+passe défini dans `config/secrets.conf`
 
 -*- coding: utf-8 mode: markdown -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8:noeol:binary
