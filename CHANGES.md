@@ -1,3 +1,9 @@
+## Version 0.8.0 du 15/03/2024-10:52
+
+* `8e593f4` maj documentation et support https
+* `761a106` ajouter frontal, simplifier l'accès aux services
+* `6a48f7a` bug: calcul des services pour restart
+
 ## Version 0.7.1 du 13/03/2024-08:07
 
 * `3741917` ajouter la documentation pour WSL
