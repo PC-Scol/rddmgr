@@ -1,3 +1,7 @@
+## Version 0.8.2 du 15/03/2024-12:53
+
+* `a95a2a4` support du proxy pour le build
+
 ## Version 0.8.1 du 15/03/2024-12:26
 
 * `39175b2` bug: s'assure que system_env existe avant édition
