@@ -1,3 +1,7 @@
+## Version 0.8.1 du 15/03/2024-12:26
+
+* `39175b2` bug: s'assure que system_env existe avant édition
+
 ## Version 0.8.0 du 15/03/2024-10:52
 
 * `8e593f4` maj documentation et support https
