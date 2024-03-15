@@ -15,5 +15,5 @@
 #<Location />
 #    AuthType CAS
 #    CASAuthNHeader On
-#    Require user dreuser
+#    Require user <authusers...>
 #</Location>

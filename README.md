@@ -84,10 +84,15 @@ Une fois la configuration mise à jour, relancer l'initialisation:
 ./rddmgr --init
 ~~~
 
-On peut maintenant démarrer traefik et pgadmin (--start est l'option par défaut)
+On peut maintenant démarrer le frontal web et pgadmin (--start est l'option par
+défaut)
 ~~~sh
 ./rddmgr
 ~~~
+
+Dans la configuration par défaut, quand le frontal web est démarré, il est
+accessible à l'adresse <http://localhost:7080/> avec le compte admin et le mot
+de passe défini dans `config/secrets.conf`
 
 ## Création d'un atelier
 
@@ -199,10 +204,10 @@ sélectionné comme source. L'atelier courant est, dans cet ordre:
 
 ## rddmgr
 
-Une installation de rddmgr contient des services (traefik, pgAdmin), un ou
+Une installation de rddmgr contient des services (frontal, pgAdmin), un ou
 plusieurs ateliers, et des données partagées
 
-traefik.service
+frontal.service
 : frontal web qui permet de servir tous les services de l'installation sur une
   unique adresse IP
 
@@ -242,33 +247,54 @@ n'est pas le cas dans cette version de rddmgr.
 
 # Exploitation
 
-## pgAdmin
+## frontal
 
-pgAdmin est lancé par défaut par rddmgr. Il permet d'accéder aux bases de
-données pivot des ateliers.
+le frontal permet d'accéder à pgAdmin ainsi qu'à des informations sur les
+ateliers actuellement existants.
 
 Dans le fichier `config/rddmgr.conf`, le paramètre `LBHOST` permet de définir le
-nom d'hôte sur lequel attaquer pgAdmin.
+nom d'hôte sur lequel attaquer le frontal.
 
-Si la configuration par défaut n'est pas modifiée, l'adresse de pgAdmin est
-<http://localhost:7080/pgadmin/> avec le compte `admin` et le mot de passe
-défini dans `config/secrets.conf`
+Si la configuration par défaut n'est pas modifiée, l'adresse du frontal est
+<http://localhost:7080/> avec le compte `admin` et le mot de passe défini dans
+`config/secrets.conf`
+
+D'autres utilisateur peuvent être rajoutés en éditant le fichier
+`frontal.service/config/apache/users.ht` et en adaptant la liste des
+utilisateurs autorisés dans `frontal.service/config/apache/authnz.conf`
+
+Pour activer la connexion par CAS
+* commenter `-auth_cas` dans le fichier
+  `frontal.service/config/apache/setup.conf`
+  ~~~sh
+  ENMODS=(
+      #-auth_cas
+      ...
+  )
+  ~~~
+* configurer l'adresse du serveur CAS dans le fichier
+  `frontal.service/config/apache/mods-available/auth_cas.conf`
+* Suivre les instructions du fichier
+  `frontal.service/config/apache/authnz.conf`
+  pour commenter ou supprimer la section authentification basique et décommenter
+  la section authentification CAS.
+  Dans ce même fichier, indiquer la liste des utilisateurs autorisés à la place
+  de `<authusers...>`
+* puis relancer le frontal
+  ~~~sh
+  ./rddmgr -r frontal
+  ~~~
+
+## pgAdmin
+
+pgAdmin permet d'accéder aux bases de données pivot des ateliers. Le lien est
+disponible sur le frontal. (Pour information, si la configuration par défaut
+n'est pas modifiée, l'adresse de pgAdmin est <http://localhost:7080/pgadmin/>
+avec le compte `admin` et le mot de passe défini dans `config/secrets.conf`)
 
 A partir de là, il n'y a plus besoin de mot de passe. Si un mot de passe est
 demandé, il s'agit du mot de passe de `pcscolpipvot`, mais il est plus probable
 que ce soit l'hôte qui ne soit pas accessible (par exemple parce que la base
 pivot n'est pas démarrée)
-
-## traefik
-
-La console traefik permet d'accéder à des informations techniques qui ne sont
-pas utiles en temps normal.
-
-Dans le fichier `config/rddmgr.conf`, le paramètre `LBHOST` permet de définir le
-nom d'hôte sur lequel attaquer la console traefik.
-
-Si la configuration par défaut n'est pas modifiée, l'adresse de la console
-traefik est <http://localhost:7080/traefik/> avec le compte `admin` et le mot de
-passe défini dans `config/secrets.conf`
 
 -*- coding: utf-8 mode: markdown -*- vim:sw=4:sts=4:et:ai:si:sta:fenc=utf-8:noeol:binary

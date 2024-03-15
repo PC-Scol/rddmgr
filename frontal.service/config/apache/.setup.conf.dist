@@ -7,17 +7,17 @@
 ENMODS=(
     -auth_cas
     #remoteip
-    #rewrite
+    rewrite
     headers
     proxy_http
     xsendfile
-    #ssl
+    ssl
 )
 
 # Sites à activer
 ENSITES=(
     000-default.conf
-    #000-default.ssl.conf
+    000-default.ssl.conf
 )
 
 # Répertoire des logs
@@ -50,7 +50,7 @@ ENSITES=(
 #   #unless var uncomment NUMBER#
 #   #ignore#
 VARS=(
-    #PROD TEST DEVEL
+    PROD TEST DEVEL
     #SERVER_NAME
     #BASE_URL
     BASE_URL_CAS
