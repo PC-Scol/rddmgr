@@ -8,8 +8,16 @@ RDDMGR="${MYDIR%/*}"; RDDMGR="${RDDMGR%/*}"
 function eecho() { echo "$*" 1>&2; }
 function eerror() { eecho "ERROR: $*"; }
 function die() { [ $# -gt 0 ] && eerror "$*"; exit 1; }
+function is_defined() { [ -n "$(declare -p "$1" 2>/dev/null)" ]; }
 
 if [ -z "$_RUNDK_IN_DOCKER" ]; then
+    ################################################################################
+    # recenser les valeur de proxy
+    declare -A PROXY_VARS
+    for var in {HTTPS,ALL,NO}_PROXY {http,https,all,no}_proxy; do
+        is_defined "$var" && PROXY_VARS[${var,,}]="${!var}"
+    done
+
     ################################################################################
     # Charger ~/.dkbuild.env
 
@@ -171,8 +179,14 @@ OPTIONS
         for arg in "${BUILD_ARGS[@]}"; do
             args+=(--build-arg "$arg=${!arg}")
         done
-        mkdir -p /tmp/rundk
-        docker build "${args[@]}" /tmp/rundk || exit 1
+        for arg in "${!PROXY_VARS[@]}"; do
+            args+=(--build-arg "$arg=${PROXY_VARS[$arg]}")
+        done
+        for host in "${HOST_MAPPINGS[@]}"; do
+            args+=(--add-host "$host")
+        done
+        mkdir -p /tmp/rddmgr-build
+        docker build "${args[@]}" /tmp/rddmgr-build || exit 1
         if [ -n "$Push" -a -n "$PRIVAREG" ]; then
             docker push "$IMAGE" || exit 1
         fi
@@ -190,6 +204,9 @@ OPTIONS
         -e _RUNDK_UID="$uid"
         -e _RUNDK_GID="$gid"
     )
+    for arg in "${!PROXY_VARS[@]}"; do
+        args+=(--e "$arg=${PROXY_VARS[$arg]}")
+    done
     for host in "${HOST_MAPPINGS[@]}"; do
         args+=(--add-host "$host")
     done

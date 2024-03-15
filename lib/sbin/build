@@ -22,6 +22,12 @@ BUILD_ARGS=(
     TIMEZONE
 )
 
+# recenser les valeur de proxy, elles seront utilisées lors du build
+declare -A PROXY_VARS
+for var in {HTTPS,ALL,NO}_PROXY {http,https,all,no}_proxy; do
+    is_defined "$var" && PROXY_VARS[${var,,}]="${!var}"
+done
+
 function _build() {
     local image="${PRIVAREG:+$PRIVAREG/}rddmgr/$1"
     if [ -n "$ForceBuild" -o -z "$(dklsimg "" "$image")" ]; then
@@ -34,6 +40,12 @@ function _build() {
         )
         for arg in "${BUILD_ARGS[@]}"; do
             args+=(--build-arg "$arg=${!arg}")
+        done
+        for arg in "${!PROXY_VARS[@]}"; do
+            args+=(--build-arg "$arg=${PROXY_VARS[$arg]}")
+        done
+        for host in "${HOST_MAPPINGS[@]}"; do
+            args+=(--add-host "$host")
         done
         docker build "${args[@]}" /tmp/rddmgr-build || die
         if [ -n "$Push" ]; then
@@ -54,6 +66,8 @@ function build_images() {
 
     mkdir -p /tmp/rddmgr-build
     source "$RDDMGR/lib/build.env"
+    read -a HOST_MAPPINGS <<<"${HOST_MAPPINGS//
+/ }"
     _build pgadmin
     _build adminer
     _build frontal
