@@ -1295,6 +1295,16 @@ _rddtools_source_profile=$source_profile
     eval "$(cat "$user_env" | grep '^_rddtools_' | sed 's/^_rddtools_//')"
 }
 
+function ensure_system_env() {
+    [ -f "$mypegase_env" ] || die "Le fichier ${mypegase_env#$WKSDIR/} est requis"
+    if should_update "$system_env" "$pegase_yml" "$sources_yml" "$WKSDIR/.env"; then
+        env_dump-config.py \
+            -s "$instance" \
+            -d "$source" -p "$source_profile" \
+            "$pegase_yml" "$sources_yml" "$WKSDIR/.env" >"$system_env"
+    fi
+}
+
 function create_env() {
     local ForceCreate=1
     [ -z "$Envname" -a $# -gt 0 ] && Envname="$1"
@@ -1359,6 +1369,7 @@ function edit_env() {
 
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
+    ensure_system_env
 
     local tmpfile; ac_set_tmpfile tmpfile
     if env_mypegase.py --export "$mypegase_env" "$system_env" "$user_env" "$tmpfile"; then
@@ -1379,14 +1390,7 @@ function run_rddtools() {
 
     local mypegase_env system_env user_env instance source source_profile
     ensure_user_env
-
-    [ -f "$mypegase_env" ] || die "Le fichier ${mypegase_env#$WKSDIR/} est requis"
-    if should_update "$system_env" "$pegase_yml" "$sources_yml" "$WKSDIR/.env"; then
-        env_dump-config.py \
-            -s "$instance" \
-            -d "$source" -p "$source_profile" \
-            "$pegase_yml" "$sources_yml" "$WKSDIR/.env" >"$system_env"
-    fi
+    ensure_system_env
 
     local -a run
     # arguments de base
